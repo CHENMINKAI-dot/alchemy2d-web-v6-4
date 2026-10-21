@@ -158,13 +158,57 @@
   const status = document.getElementById('resourceLoaderStatus');
   const retry = document.getElementById('resourceRetry');
 
-  function updateProgress(loaded) {
-    const value = Math.floor(loaded / assets.length * 100);
+  function updateProgress(loaded, total = assets.length) {
+    const value = total ? Math.floor(loaded / total * 100) : 100;
     fill.style.width = `${value}%`;
     percent.textContent = `${value}%`;
-    count.textContent = `${loaded} / ${assets.length} 项资源`;
+    count.textContent = `${loaded} / ${total} 项资源`;
     progress.setAttribute('aria-valuenow', String(value));
   }
+
+  function waitForImageDecode(image) {
+    const loaded = image.complete
+      ? (image.naturalWidth ? Promise.resolve() : Promise.reject(new Error('Image load failed')))
+      : new Promise((resolve, reject) => {
+          image.addEventListener('load', resolve, { once: true });
+          image.addEventListener('error', reject, { once: true });
+        });
+    return loaded.then(() => typeof image.decode === 'function' ? image.decode() : undefined);
+  }
+
+  let retryLoad = loadResources;
+
+  async function waitForGameImages() {
+    const images = Array.from(document.querySelectorAll('#game img'));
+    if (!images.length) return;
+
+    loader.classList.remove('resource-loader-hidden');
+    status.textContent = '正在准备本轮画面…';
+    updateProgress(0, images.length);
+    let loaded = 0;
+    const failed = [];
+    await Promise.all(images.map(async image => {
+      try {
+        await waitForImageDecode(image);
+        loaded += 1;
+        updateProgress(loaded, images.length);
+      } catch {
+        failed.push(image.alt || '实验图片');
+      }
+    }));
+
+    if (failed.length) {
+      status.textContent = `${failed.length} 张图片未能准备完成，请检查网络后重试。`;
+      retryLoad = waitForGameImages;
+      retry.classList.remove('hidden');
+      return;
+    }
+
+    status.textContent = '本轮画面已准备完成。';
+    window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 350);
+  }
+
+  window.alchemyWaitForGameImages = waitForGameImages;
 
   async function loadResources() {
     retry.classList.add('hidden');
@@ -177,9 +221,14 @@
     await Promise.all(assets.map(path => new Promise(resolve => {
       const image = new Image();
       image.decoding = 'async';
-      image.onload = () => {
-        loaded += 1;
-        updateProgress(loaded);
+      image.onload = async () => {
+        try {
+          if (typeof image.decode === 'function') await image.decode();
+          loaded += 1;
+          updateProgress(loaded);
+        } catch {
+          failed.push(path);
+        }
         resolve();
       };
       image.onerror = () => {
@@ -199,7 +248,7 @@
     window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 450);
   }
 
-  retry.addEventListener('click', loadResources);
+  retry.addEventListener('click', () => retryLoad());
   loadResources();
 })();
 </script>

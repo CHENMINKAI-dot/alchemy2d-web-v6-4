@@ -101,6 +101,7 @@ function makeSession(practice){
  record('session_start',{config:copy(config),seed,potionLayout:copy(s.potionLayout)});
  beginEpisode();
  notice(practice?'练习开始':'正式实验开始');
+ if(typeof window.alchemyWaitForGameImages==='function')void window.alchemyWaitForGameImages();
 }
 function beginEpisode(){
  // Snapshot the previous Episode before constructing the next one. A session
