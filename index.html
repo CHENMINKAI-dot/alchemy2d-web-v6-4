@@ -10,6 +10,18 @@
 <link rel="stylesheet" href="theme_v6_3.css">
 </head>
 <body>
+<section id="resourceLoader" class="resource-loader" aria-labelledby="resourceLoaderTitle">
+  <div class="resource-loader-card">
+    <span class="resource-loader-mark" aria-hidden="true">✦</span>
+    <h1 id="resourceLoaderTitle">正在准备炼金实验</h1>
+    <p id="resourceLoaderStatus" role="status" aria-live="polite">正在加载实验资源…</p>
+    <div id="resourceProgress" class="resource-progress" role="progressbar" aria-label="实验资源加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span id="resourceProgressFill" class="resource-progress-fill"></span>
+    </div>
+    <div class="resource-loader-meta"><span id="resourceProgressCount">0 / 40 项资源</span><strong id="resourceProgressPercent">0%</strong></div>
+    <button id="resourceRetry" class="button primary resource-retry hidden" type="button">重试加载</button>
+  </div>
+</section>
 <div class="app-shell">
   <header class="topbar">
     <div class="brand">ALCHEMY</div>
@@ -120,5 +132,76 @@
 <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
 <script src="alchemy_core.js"></script>
 <script src="app.js"></script>
+<script>
+(() => {
+  const assets = [
+    'assets/cauldron.png',
+    'assets/potion_green.png', 'assets/potion_orange.png', 'assets/potion_pink.png',
+    'assets/potion_red.png', 'assets/potion_teal.png', 'assets/potion_yellow.png',
+    'assets/stone_round.png', 'assets/stone_round_blue.png', 'assets/stone_round_purple.png', 'assets/stone_round_rose.png',
+    'assets/stone_faceted.png', 'assets/stone_faceted_blue.png', 'assets/stone_faceted_purple.png', 'assets/stone_faceted_rose.png',
+    'assets/stone_spire.png', 'assets/stone_spire_blue.png', 'assets/stone_spire_purple.png', 'assets/stone_spire_rose.png',
+    'assets/ui/button_primary.webp', 'assets/ui/button_secondary.webp',
+    'assets/ui/corner_bl.webp', 'assets/ui/corner_br.webp', 'assets/ui/corner_tl.webp', 'assets/ui/corner_tr.webp',
+    'assets/ui/score_burst.webp', 'assets/ui/score_minus1.webp', 'assets/ui/score_minus3.webp',
+    'assets/ui/score_plus1.webp', 'assets/ui/score_plus15.webp', 'assets/ui/stone_surface.webp',
+    'assets/ui_atlas/button_rect.png', 'assets/ui_atlas/button_rect_alt.png',
+    'assets/ui_atlas/frame_large.png', 'assets/ui_atlas/panel_dark_texture.webp',
+    'assets/ui_atlas/plaque_dark.png', 'assets/ui_atlas/plaque_parchment.png',
+    'assets/ui_atlas/slot_brown.png', 'assets/ui_atlas/slot_purple.png', 'assets/ui_atlas/tile_landscape.png'
+  ];
+  const loader = document.getElementById('resourceLoader');
+  const progress = document.getElementById('resourceProgress');
+  const fill = document.getElementById('resourceProgressFill');
+  const percent = document.getElementById('resourceProgressPercent');
+  const count = document.getElementById('resourceProgressCount');
+  const status = document.getElementById('resourceLoaderStatus');
+  const retry = document.getElementById('resourceRetry');
+
+  function updateProgress(loaded) {
+    const value = Math.floor(loaded / assets.length * 100);
+    fill.style.width = `${value}%`;
+    percent.textContent = `${value}%`;
+    count.textContent = `${loaded} / ${assets.length} 项资源`;
+    progress.setAttribute('aria-valuenow', String(value));
+  }
+
+  async function loadResources() {
+    retry.classList.add('hidden');
+    loader.classList.remove('resource-loader-hidden');
+    status.textContent = '正在加载实验资源…';
+    updateProgress(0);
+    let loaded = 0;
+    const failed = [];
+
+    await Promise.all(assets.map(path => new Promise(resolve => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => {
+        loaded += 1;
+        updateProgress(loaded);
+        resolve();
+      };
+      image.onerror = () => {
+        failed.push(path);
+        resolve();
+      };
+      image.src = new URL(path, document.baseURI).href;
+    })));
+
+    if (failed.length) {
+      status.textContent = `${failed.length} 项资源未能加载，请检查网络后重试。`;
+      retry.classList.remove('hidden');
+      return;
+    }
+
+    status.textContent = '资源已全部加载，正在进入实验…';
+    window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 450);
+  }
+
+  retry.addEventListener('click', loadResources);
+  loadResources();
+})();
+</script>
 </body>
 </html>

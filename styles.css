@@ -10,6 +10,18 @@ button,input{font:inherit}
 button{touch-action:manipulation}
 button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .hidden{display:none!important}
+.resource-loader{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 38%,#29303a 0,#151a22 48%,#10151d 100%);opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease}
+.resource-loader-hidden{opacity:0;visibility:hidden;pointer-events:none}
+.resource-loader-card{width:min(440px,100%);padding:38px 34px 30px;text-align:center;border:1px solid #695a48;border-radius:18px;background:linear-gradient(145deg,rgba(39,43,48,.98),rgba(25,31,39,.98));box-shadow:0 22px 70px rgba(0,0,0,.42),inset 0 0 0 4px rgba(226,194,142,.045)}
+.resource-loader-mark{display:block;color:var(--gold);font-size:28px;line-height:1;margin-bottom:16px;text-shadow:0 0 22px rgba(230,194,142,.5)}
+.resource-loader-card h1{margin:0;color:#f2e7d4;font:normal 25px Georgia,"Songti SC",serif;letter-spacing:.04em}
+.resource-loader-card p{min-height:24px;margin:12px 0 22px;color:var(--muted);font-size:13px}
+.resource-progress{height:12px;overflow:hidden;border:1px solid #635747;border-radius:999px;background:#11161d;box-shadow:inset 0 2px 5px rgba(0,0,0,.45)}
+.resource-progress-fill{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#a87b49,#edcf98 55%,#fff0c9);box-shadow:0 0 15px rgba(230,194,142,.34);transition:width .18s ease}
+.resource-loader-meta{display:flex;justify-content:space-between;align-items:center;margin-top:11px;color:#a8b4c3;font-size:12px}
+.resource-loader-meta strong{color:#ecd5ad;font-size:13px;font-variant-numeric:tabular-nums}
+.resource-retry{width:100%;margin-top:22px}
+@media(prefers-reduced-motion:reduce){.resource-loader,.resource-progress-fill{transition:none}}
 .app-shell{max-width:1480px;margin:0 auto;padding:0 28px 38px}
 .topbar{min-height:87px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #29333e;margin-bottom:27px}
 .brand{font-family:Georgia,"Times New Roman",serif;letter-spacing:.21em;font-size:23px;font-weight:750}
