@@ -1,0 +1,280 @@
+/* Alchemy 2D v6.3  |  Faithful responsive atlas skin
+   Images are nine-sliced. Corners never scale with panel height or width.
+   This file is exclusively presentational: application code/chemistry unchanged. */
+:root{
+ --atlas-paper:#e2c589; --atlas-ink:#231b16;
+ --atlas-font:"Songti SC", "STSong", "Noto Serif CJK SC", Georgia,serif;
+ --atlas-deep:#1b1716;
+}
+body{
+ background:radial-gradient(ellipse 120% 55% at 50% -10%,rgba(103,70,43,.23),transparent 73%),
+    linear-gradient(180deg,#1c1613 0%,#100e0d 54%,#100d0c 100%);
+}
+.app-shell{max-width:1500px}
+.topbar{border-bottom:1px solid rgba(213,181,124,.16);margin-bottom:22px}
+.brand{font-family:Georgia,serif;letter-spacing:.16em;color:#e7d5b7}
+
+/* Panels: source art is used for the corners and edges only. Each center
+   retains an independent texture, so a tall panel can grow without warping. */
+.card,dialog{
+ background:linear-gradient(165deg,rgba(23,20,19,.94),rgba(17,15,15,.96)),
+   url('assets/ui_atlas/panel_dark_texture.webp') center/290px auto repeat !important;
+ border:0!important;border-radius:0!important;
+ box-shadow:0 12px 38px rgba(0,0,0,.48),inset 0 0 45px rgba(0,0,0,.32)!important;
+ isolation:isolate;position:relative;
+}
+.card::before,dialog::before{
+ content:""!important;display:block!important;position:absolute;inset:0;z-index:0;
+ border:34px solid transparent;
+ border-image:url('assets/ui_atlas/frame_large.png') 66 66 56 66 / 34px 34px 31px 34px / 0 stretch!important;
+ opacity:1!important;background:none!important;pointer-events:none;
+}
+.card>*,dialog>*{position:relative;z-index:1}
+.game-grid>.card{padding:34px 30px 36px!important}
+.history-panel{padding:31px 34px 34px!important}
+.status-bar{padding:23px 29px!important;min-height:102px;background-color:var(--atlas-deep)}
+/* Welcome: two separately framed blocks, not an oversized warped frame. */
+.welcome.card{background:transparent!important;box-shadow:none!important;overflow:visible}
+.welcome.card::before{display:none!important}
+.welcome-copy,.setup{
+ position:relative;isolation:isolate;overflow:hidden;
+ background:linear-gradient(160deg,#231d1b,#141212)!important;
+ border:0!important;border-radius:0!important;
+ box-shadow:0 12px 34px rgba(0,0,0,.4);
+}
+.welcome-copy::before,.setup::before{
+ content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+ border:35px solid transparent;
+ border-image:url('assets/ui_atlas/frame_large.png') 66 66 56 66 / 34px 34px 30px 34px /0 stretch;
+}
+.welcome-copy>*,.setup>*{position:relative;z-index:1}
+.welcome-copy{padding:62px 52px 42px!important}
+.setup{padding:47px 43px 40px!important;margin-left:14px}
+.welcome-images{min-height:236px}
+.setup-note{color:#bdb09d}
+
+/* Plaques are scaled using a 9-slice border, not as stretched backgrounds.
+   Black lettering is required for legibility on the light parchment surface. */
+.game-grid h2,.history-head h2,.setup h2,.action-dialog h2,.help-dialog h2{
+ font-family:var(--atlas-font)!important;color:#33271c!important;
+ font-weight:700!important;text-shadow:0 1px 0 rgba(255,240,203,.32)!important;
+ position:relative;display:inline-flex;align-items:center;justify-content:center;
+ box-sizing:border-box;min-width:140px;max-width:100%;min-height:49px;height:auto;
+ margin:0 0 19px!important;padding:11px 19px!important;
+ border:12px solid transparent!important;
+ border-image:url('assets/ui_atlas/plaque_parchment.png') 25 24 25 24 fill / 12px 17px /0 stretch!important;
+ background:none!important;letter-spacing:.07em;line-height:1.2!important;
+ font-size:20px!important;
+}
+.game-grid h2::before,.history-head h2::before{display:none!important}
+.game-grid h2::after,.history-head h2::after{display:none!important}
+.history-head{display:flex;justify-content:space-between;align-items:center;min-width:0;gap:16px}
+.history-head h2{margin:0!important;flex:0 0 auto!important;width:max-content;max-width:70%}
+.history-count{white-space:normal;text-align:right;color:#c9bba2}
+
+/* Compact status plaques; fixed corner proportions at all viewport widths. */
+.stat{
+ position:relative;min-width:145px;max-width:195px;
+ margin-right:9px;padding:12px 20px!important;
+ background:linear-gradient(180deg,rgba(52,35,32,.5),rgba(31,23,22,.57))!important;
+ border:0!important;isolation:isolate;
+}
+.stat::before{
+ content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ border:18px solid transparent;
+ border-image:url('assets/ui_atlas/plaque_dark.png') 22 18 24 18 /17px 16px /0 stretch;
+}
+.stat:first-child{padding-left:20px!important}
+.stat span{color:#d6c1a4;font-size:10px;letter-spacing:.12em;z-index:1}
+.stat strong{color:#f3e9d8;font-size:21px;z-index:1}
+.stat.score strong{color:#ffcb76}
+.mode-label{
+ background:transparent!important;border:1px solid rgba(197,170,133,.34)!important;
+ border-radius:0!important;color:#e4d3b8;padding:9px 12px;
+ font-size:11px;letter-spacing:.02em;
+}
+
+/* v6.4: high-contrast, rectangular stone buttons from the SAME user-provided atlas.
+   Primary action: clear dark wood center, pale ivory lettering, no endcap jewels.
+   Corners stay stable via nine-slice border-image. */
+.button{
+ min-height:58px;position:relative;isolation:isolate;overflow:visible;
+ border:0!important;border-radius:0!important;background:transparent!important;
+ box-shadow:none!important;padding:13px 20px!important;
+ font-family:var(--atlas-font)!important;font-weight:750;font-size:16px;
+ letter-spacing:.045em;text-shadow:0 1px 2px rgba(0,0,0,.8);
+ color:#fff5df!important;line-height:1.3;white-space:normal;
+}
+.button::before{
+ content:"";display:block;position:absolute;inset:0!important;z-index:-1;
+ border:18px solid transparent!important;
+ border-image:url('assets/ui_atlas/button_rect_alt.png') 30 29 29 29 fill / 17px 17px 17px 17px /0 stretch!important;
+ background:none!important;opacity:1;filter:none!important;pointer-events:none;
+ transition:filter .16s ease, transform .16s ease;
+}
+.button.ghost::before,.button.quiet::before{
+ border-image:url('assets/ui_atlas/button_rect.png') 30 29 29 29 fill / 17px 17px 17px 17px /0 stretch!important;
+}
+.button:hover:not(:disabled){transform:none!important}
+.button:hover:not(:disabled)::before{filter:brightness(1.16)!important;transform:translateY(-1px)}
+.button:active:not(:disabled)::before{filter:brightness(.88)!important;transform:translateY(1px)}
+.button:disabled{opacity:1!important;color:#c7beaf!important;cursor:not-allowed}
+.button:disabled::before{filter:grayscale(.65) brightness(.50)!important;opacity:.9}
+.button:focus-visible{outline:2px solid #ffdda1;outline-offset:4px}
+#endTrialBtn{min-height:52px;font-size:15px}
+/* Small help controls use the less emphatic lower atlas panels. */
+#helpBtn,#closeHelpBtn{
+ position:relative;padding:12px 19px!important;min-height:40px;color:#f1e3ce!important;
+ border:0!important;border-radius:0!important;background:transparent!important;
+ isolation:isolate;
+}
+#helpBtn::before,#closeHelpBtn::before{
+ content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+ border:14px solid transparent;
+ border-image:url('assets/ui_atlas/button_rect_alt.png') 30 29 29 29 fill /13px 13px /0 stretch;
+}
+
+/* Game elements keep their geometry and stable 4x3 potion arrangement.
+   The atlas becomes a border only, never a full-image scaled background. */
+.stone-tile,.potion-tile,.history-card,.trial-group,.comparison-grid>.comparison-state,.session-pane{
+ background:linear-gradient(165deg,rgba(40,31,29,.92),rgba(21,18,18,.96))!important;
+ border:0!important;border-radius:0!important;
+ box-shadow:0 5px 15px rgba(0,0,0,.28)!important;
+ position:relative;isolation:isolate;overflow:hidden;
+}
+.stone-tile::before,.potion-tile::before,.history-card::before,.trial-group::before,.comparison-grid>.comparison-state::before,.session-pane::before{
+ content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+ border:20px solid transparent;
+ border-image:url('assets/ui_atlas/tile_landscape.png') 26 24 25 24 /15px 16px /0 stretch;
+ opacity:.95;
+}
+.potion-tile::before{
+ border:17px solid transparent;
+ border-image:url('assets/ui_atlas/slot_brown.png') 17 17 17 17 /14px 14px /0 stretch;
+}
+.potion-tile.selected::before{
+ border-image-source:url('assets/ui_atlas/slot_purple.png');
+}
+.stone-tile.selected,.potion-tile.selected{
+ background:linear-gradient(165deg,#3c2d27,#231c1b)!important;
+ outline:2px solid rgba(221,196,144,.85);outline-offset:-1px;
+ box-shadow:0 0 19px rgba(218,163,95,.24)!important;
+}
+.stone-tile:hover:not(:disabled),.potion-tile:hover:not(:disabled){filter:brightness(1.08)}
+.stone-tile>*,.potion-tile>*,.history-card>*,.trial-group>*,.comparison-grid>.comparison-state>*,.session-pane>*{position:relative;z-index:1}
+/* keep the value thermometer and potion hues unchanged */
+.thermometer{isolation:isolate}
+.potion-tile.used{opacity:.23}
+/* Workstation: no stretched image behind cauldron, just a clean recessed bay. */
+.cauldron-scene{background:radial-gradient(ellipse at 50% 50%,rgba(84,60,87,.16),rgba(14,12,12,.94) 75%)!important;
+ border:1px solid rgba(167,144,118,.2);border-radius:2px;box-shadow:inset 0 0 30px rgba(0,0,0,.5)}
+.operation-controls{gap:11px}
+.session-pane{margin-top:18px;padding:19px 22px}
+/* Dividers are subdued; no inaccurate glyph or stray sprite fragments. */
+.feedback-potion{border-bottom:1px solid rgba(194,169,126,.3)}
+.action-dialog-head,.help-heading{border-bottom:1px solid rgba(194,169,126,.27);padding-bottom:11px}
+.history-head{margin-bottom:11px}
+.trial-group summary{padding:15px 22px}
+.trial-group[open] summary{border-bottom:1px solid rgba(202,172,128,.22)}
+.history-card{padding:19px 21px}
+.comparison-grid>.comparison-state{padding:18px 12px;min-height:225px}
+.history-potion{border-right:1px solid rgba(195,173,134,.21)}
+/* dialogs: full-size nine-slice on the backdrop, content within safe edge margin */
+dialog{padding:38px 39px!important;max-height:calc(100vh - 30px);overflow-y:auto}
+dialog::backdrop{background:rgba(6,5,5,.8);backdrop-filter:blur(5px)}
+.action-dialog h2,.help-dialog h2{margin:0!important}
+.dialog-context{color:#cfbc9d}
+.help-dialog p,.help-dialog li{color:#e1d3bd}
+/* Score effect intentionally unchanged from v6.1 (accepted by researcher). */
+
+@media(max-width:1250px){
+ .game-grid>.card{padding:30px 25px!important}
+}
+@media(max-width:800px){
+ .app-shell{padding:0 14px 28px}
+ .welcome{display:grid;grid-template-columns:1fr;gap:16px}
+ .welcome-copy{padding:48px 37px 34px!important}
+ .setup{margin-left:0;padding:40px 34px!important}
+ .stat{min-width:0;width:auto;max-width:none;margin:0 3px;padding:10px 12px!important}
+ .stat:first-child{padding-left:12px!important}
+ .stat strong{font-size:18px}
+ .status-bar{padding:20px 16px!important;min-height:94px}
+ .game-grid>.card{padding:30px 24px!important}
+ .history-panel{padding:29px 24px!important}
+ dialog{padding:30px 25px!important}
+}
+@media(max-width:520px){
+ .app-shell{padding:0 9px 22px}
+ .topbar{min-height:72px;margin-bottom:14px;padding:0 5px}
+ .brand{font-size:21px}
+ .welcome-copy{padding:42px 29px 30px!important}
+ .setup{padding:36px 29px!important}
+ .game-grid>.card{padding:29px 19px!important}
+ .history-panel{padding:27px 18px!important}
+ .status-bar{padding:18px 13px!important;gap:0}
+ .stat{margin:0 2px;padding:9px 6px!important;min-width:0}
+ .stat:first-child{padding-left:6px!important}
+ .stat span{font-size:9px;letter-spacing:.02em}
+ .stat strong{font-size:15px}
+ .mode-label{grid-column:1/-1;margin:10px auto 0}
+ .game-grid h2,.history-head h2,.setup h2,.action-dialog h2,.help-dialog h2{min-width:119px;font-size:17px!important;min-height:46px;margin-bottom:15px!important;padding:9px 12px!important}
+ .button{font-size:13px;min-height:50px;padding:10px 14px!important}
+ .operation-controls{gap:8px}
+ .potion-tile{min-height:101px;padding:8px 2px}
+ .potion-tile .potion-image{height:66px}
+ .potion-tile span{font-size:10px}
+ .history-head{align-items:center;gap:6px}
+ .history-count{max-width:140px;font-size:10px}
+ .history-card{padding:16px 12px}
+ .comparison-grid>.comparison-state{padding:13px 6px}
+ .comparison-grid .stone-image-box{width:92px;height:112px}
+ dialog{padding:29px 18px!important}
+ dialog::before,.card::before{border-width:27px;border-image-width:26px}
+}
+@media(prefers-reduced-motion:reduce){
+ .button::before,.potion-tile,.stone-tile{transition:none!important}
+}
+
+/* prevent flex items (workstation title) from stretching decorative artwork */
+.workstation > h2 {align-self:flex-start!important;width:max-content!important;flex:0 0 auto!important}
+
+/* responsive status: keep status text inside the plaques rather than beneath frames */
+@media(max-width:520px){.status-bar .stat{padding:12px 7px 11px!important}.stat strong{font-size:15px;white-space:nowrap}.stat span{font-size:9px;line-height:1.3;white-space:nowrap}.history-head h2{flex:0 0 auto!important;max-width:60%}}
+
+
+/* v6.4 deposit reveal: ONLY the accepted Gothic numeral artwork.
+   No backdrop, no panel, no labels and no "分" suffix. */
+.fx-score-number{
+ position:fixed;left:50%;top:46%;z-index:5;
+ display:flex;align-items:center;justify-content:center;
+ padding:0!important;margin:0;border:0!important;
+ background:none!important;box-shadow:none!important;
+ width:min(650px,98vw);height:min(290px,46vw);
+ pointer-events:none;
+ animation:alchemy-numeral-pop 1.5s cubic-bezier(.18,.8,.25,1) both;
+}
+.fx-score-number .fx-score-sprite{
+ display:block;width:auto;height:clamp(104px,18vw,210px);
+ max-width:min(570px,92vw);object-fit:contain;
+ filter:drop-shadow(0 5px 18px rgba(0,0,0,.56));
+ animation:none!important;
+}
+.fx-score-number.value-low .fx-score-sprite{
+ filter:hue-rotate(169deg) saturate(.9) drop-shadow(0 5px 18px rgba(38,88,151,.55));
+}
+.fx-score-number.value-midlow .fx-score-sprite{
+ filter:hue-rotate(145deg) saturate(.65) drop-shadow(0 5px 18px rgba(68,119,156,.48));
+}
+@keyframes alchemy-numeral-pop{
+ 0%{opacity:0;transform:translate(-50%,-40%) scale(.70)}
+ 17%{opacity:1;transform:translate(-50%,-50%) scale(1.09)}
+ 28%,78%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+ 100%{opacity:0;transform:translate(-50%,-63%) scale(1.03)}
+}
+@media(max-width:520px){
+ .fx-score-number{top:44%;width:98vw;height:180px}
+ .fx-score-number .fx-score-sprite{height:clamp(96px,28vw,150px);max-width:92vw}
+}
+@media(prefers-reduced-motion:reduce){
+ .fx-score-number{animation:none!important;opacity:1;transform:translate(-50%,-50%)}
+}

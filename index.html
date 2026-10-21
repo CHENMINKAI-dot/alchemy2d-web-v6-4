@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>ALCHEMY · 2D 炼金实验 v6.4</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="theme_v6_1.css">
+<link rel="stylesheet" href="theme_v6_3.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand">ALCHEMY</div>
+    <button type="button" id="helpBtn" class="text-button">任务说明</button>
+  </header>
+
+  <main>
+    <section id="welcome" class="welcome card">
+      <div class="welcome-copy">
+        <span class="eyebrow">THE ALCHEMY TASK</span>
+        <h1>探索炼金规律</h1>
+        <p>观察石头、尝试药水，并利用学到的规律获得更高积分。</p>
+        <div class="welcome-images">
+          <img src="assets/potion_pink.png" alt="粉色魔法药水">
+          <img class="center-art" src="assets/cauldron.png" alt="炼金坩埚">
+          <img src="assets/potion_teal.png" alt="青绿色魔法药水">
+        </div>
+      </div>
+      <div class="setup">
+        <h2>实验设置</h2>
+        <label class="field"><span>被试编号</span><input id="participantId" maxlength="40" autocomplete="off" placeholder="例如 P001"></label>
+        <div class="field-row">
+          <label class="field"><span>Episode 数量</span><input id="episodeCount" type="number" min="1" max="24" value="2"></label>
+          <label class="field"><span>每 Episode 的 Trial 数</span><input id="trialCount" type="number" min="1" max="20" value="10"></label>
+        </div>
+        <label class="field"><span>随机种子（可留空）</span><input id="seed" type="text" inputmode="numeric" placeholder="自动生成"></label>
+        <div class="setup-actions">
+          <button id="startBtn" class="button primary" type="button">开始正式实验</button>
+          <button id="practiceBtn" class="button ghost" type="button">练习 2 个 Trial</button>
+        </div>
+        <p class="setup-note">每个 Trial：3 块石头、六种药水各 2 瓶。数据仅保存在本机，完成后请导出。</p>
+      </div>
+    </section>
+
+    <section id="game" class="game hidden">
+      <div class="status-bar card" aria-label="当前实验进度">
+        <div class="stat"><span>EPISODE</span><strong id="episodeValue">1 / 2</strong></div>
+        <div class="stat"><span>TRIAL</span><strong id="trialValue">1 / 10</strong></div>
+        <div class="stat score"><span>累计积分</span><strong id="totalValue">0</strong></div>
+        <span id="mode" class="mode-label">正式实验</span>
+      </div>
+
+      <div class="game-grid">
+        <section class="card stones-panel" aria-labelledby="stonesTitle">
+          <h2 id="stonesTitle">石头</h2>
+          <div id="stonesList" class="stones-list"></div>
+        </section>
+
+        <section class="card workstation" aria-labelledby="workstationTitle">
+          <h2 id="workstationTitle">操作台</h2>
+          <div id="cauldronScene" class="cauldron-scene"><img src="assets/cauldron.png" alt="炼金坩埚"></div>
+          <div class="operation-controls">
+            <button type="button" id="applyBtn" class="button primary" disabled>使用药水</button>
+            <button type="button" id="depositBtn" class="button gold" disabled>投入坩埚</button>
+            <button type="button" id="endTrialBtn" class="button quiet end-trial-button" disabled>结束本轮</button>
+          </div>
+          <div id="transitionPane" class="session-pane hidden">
+            <div id="trialSummary"></div>
+            <button id="nextBtn" type="button" class="button primary">进入下一 Trial</button>
+          </div>
+          <div id="completePane" class="session-pane hidden">
+            <div id="completeSummary"></div>
+            <button id="finishExportBtn" type="button" class="button primary">导出 JSON 数据</button>
+            <button id="finishCsvBtn" type="button" class="button ghost">导出 CSV 数据</button>
+            <button id="newSessionBtn" type="button" class="button quiet">返回实验设置</button>
+          </div>
+        </section>
+
+        <section class="card potions-panel" aria-labelledby="potionsTitle">
+          <h2 id="potionsTitle">药水</h2>
+          <div id="potionsList" class="potions-list"></div>
+        </section>
+      </div>
+
+      <section class="card history-panel" aria-labelledby="historyTitle">
+        <div class="history-head"><h2 id="historyTitle">用药记录</h2><span id="historyCount" class="history-count">本 Episode · 0 次</span></div>
+        <div id="history" class="history-list"></div>
+      </section>
+      <div id="srFeedback" class="sr-only" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="actionDialog" class="action-dialog" aria-labelledby="actionTitle" aria-modal="true">
+  <div class="action-dialog-head">
+    <h2 id="actionTitle">用药结果</h2>
+    <span id="actionSub" class="dialog-context"></span>
+  </div>
+  <div id="actionDetails" class="action-details"></div>
+  <button id="continueBtn" class="button primary dialog-continue" type="button">继续</button>
+</dialog>
+
+<dialog id="helpDialog" class="help-dialog" aria-labelledby="helpTitle">
+  <div class="help-heading"><h2 id="helpTitle">任务说明</h2><button type="button" id="closeHelpBtn" class="text-button">关闭</button></div>
+  <p>每个 Episode 使用一套固定的隐藏规则。进入下个 Episode 时，规则将重新生成。</p>
+  <ol>
+    <li>每个 Trial 有 3 块石头和 12 瓶药水，六种颜色各 2 瓶。每种颜色的两瓶药水相邻摆放为一组。六组药水在实验开始时随机排序，摆成四列三行。此后所有 Trial 的位置保持不变，消耗后仅原位置变暗。</li>
+    <li>选择一块石头和一瓶药水，再点击「使用药水」。每次用药后会出现前后对比，点击「继续」方可操作。</li>
+    <li>每块石头左侧的温度计通过同色液柱高度表示四档价值：最低蓝色1格、次低浅蓝2格、次高浅橙3格、最高橙色4格。每支温度计只使用一种颜色，不显示具体分值。</li>
+    <li>药水使用后会被消耗。如果石头没有变化，并不代表可以判断具体原因。</li>
+    <li>点击「使用药水」会先播放施法动画，再显示图文反馈；点击「投入坩埚」则先播放投入动画，再弹出明显的数字得分动画（例如 +15 分或 -1 分），并累计该石头的得分。</li>
+    <li>同一 Episode 的用药记录会跨 Trial 保留。进入新 Episode 后开始新的记录。</li>
+    <li>没有步数限制。随时点击「结束本轮」，即可直接结算当前 Trial，未投入坩埚的石头不计分；三块石头都已投入时自动结束本轮。</li>
+    <li>完成整个实验后，请立即下载数据文件。</li>
+  </ol>
+  <p class="help-footnote">本程序是基于 Alchemy 核心规则改编的二维人类实验，不是 DeepMind 官方程序。v4 为降低任务负荷去除了旋转，仅保留逐 Episode 随机反射。实验数据只保存在此浏览器中。</p>
+</dialog>
+<div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+<script src="alchemy_core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
