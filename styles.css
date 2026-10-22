@@ -10,16 +10,16 @@ button,input{font:inherit}
 button{touch-action:manipulation}
 button:focus-visible,summary:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .hidden{display:none!important}
-.resource-loader{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 38%,#29303a 0,#151a22 48%,#10151d 100%);opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease}
+.resource-loader{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:24px;background:rgba(18,14,12,.52);-webkit-backdrop-filter:blur(13px) saturate(.72) brightness(.72);backdrop-filter:blur(13px) saturate(.72) brightness(.72);opacity:1;visibility:visible;transition:opacity .35s ease,visibility .35s ease}
 .resource-loader-hidden{opacity:0;visibility:hidden;pointer-events:none}
-.resource-loader-card{width:min(440px,100%);padding:38px 34px 30px;text-align:center;border:1px solid #695a48;border-radius:18px;background:linear-gradient(145deg,rgba(39,43,48,.98),rgba(25,31,39,.98));box-shadow:0 22px 70px rgba(0,0,0,.42),inset 0 0 0 4px rgba(226,194,142,.045)}
-.resource-loader-mark{display:block;color:var(--gold);font-size:28px;line-height:1;margin-bottom:16px;text-shadow:0 0 22px rgba(230,194,142,.5)}
-.resource-loader-card h1{margin:0;color:#f2e7d4;font:normal 25px Georgia,"Songti SC",serif;letter-spacing:.04em}
-.resource-loader-card p{min-height:24px;margin:12px 0 22px;color:var(--muted);font-size:13px}
-.resource-progress{height:12px;overflow:hidden;border:1px solid #635747;border-radius:999px;background:#11161d;box-shadow:inset 0 2px 5px rgba(0,0,0,.45)}
-.resource-progress-fill{display:block;width:0;height:100%;border-radius:inherit;background:linear-gradient(90deg,#a87b49,#edcf98 55%,#fff0c9);box-shadow:0 0 15px rgba(230,194,142,.34);transition:width .18s ease}
-.resource-loader-meta{display:flex;justify-content:space-between;align-items:center;margin-top:11px;color:#a8b4c3;font-size:12px}
-.resource-loader-meta strong{color:#ecd5ad;font-size:13px;font-variant-numeric:tabular-nums}
+.resource-loader-card{position:relative;isolation:isolate;width:min(480px,100%);padding:36px 34px 30px;text-align:center;border:27px solid transparent;border-image:url('assets/ui_atlas/frame_large.png') 66 66 56 66 / 27px 27px 24px 27px / 0 stretch;background:linear-gradient(165deg,rgba(31,25,21,.96),rgba(17,14,13,.97)),url('assets/ui_atlas/panel_dark_texture.webp') center/290px auto repeat;box-shadow:0 26px 74px rgba(0,0,0,.46),inset 0 0 38px rgba(0,0,0,.38)}
+.resource-loader-mark{display:block;color:#f3d489;font-size:28px;line-height:1;margin-bottom:16px;text-shadow:0 0 18px rgba(255,211,119,.65)}
+.resource-loader-card h1{margin:0;color:#f2e4c9;font:normal 25px var(--atlas-font,Georgia,"Songti SC",serif);letter-spacing:.04em;text-shadow:0 1px 0 rgba(255,238,195,.12)}
+.resource-loader-card p{min-height:24px;margin:12px 0 22px;color:#c2b49c;font-size:13px}
+.resource-progress{height:15px;overflow:hidden;border:1px solid #8a6830;border-radius:2px;background:linear-gradient(180deg,#241a10,#100d09);box-shadow:inset 0 2px 5px rgba(0,0,0,.72),0 0 0 1px rgba(255,221,137,.12)}
+.resource-progress-fill{display:block;width:0;height:100%;border-radius:1px;background:linear-gradient(180deg,#fff4be 0%,#d39c3c 19%,#ffe6a0 38%,#a96818 55%,#edc96f 73%,#7b4c16 87%,#f1ce79 100%);box-shadow:inset 0 1px 1px rgba(255,255,231,.8),inset 0 -2px 2px rgba(86,45,7,.72),0 0 13px rgba(239,190,82,.52);transition:width .18s ease}
+.resource-loader-meta{display:flex;justify-content:space-between;align-items:center;margin-top:11px;color:#bdaf98;font-size:12px}
+.resource-loader-meta strong{color:#f2d582;font-size:13px;font-variant-numeric:tabular-nums;text-shadow:0 0 10px rgba(239,194,92,.25)}
 .resource-retry{width:100%;margin-top:22px}
 @media(prefers-reduced-motion:reduce){.resource-loader,.resource-progress-fill{transition:none}}
 .app-shell{max-width:1480px;margin:0 auto;padding:0 28px 38px}
