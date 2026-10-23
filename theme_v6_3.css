@@ -379,17 +379,52 @@ dialog::backdrop{background:rgba(6,5,5,.8);backdrop-filter:blur(5px)}
  .history-card .thermometer{height:55px}.history-card .thermo-tube{height:39px}
 }
 
-/* Grow the workbench with taller desktop windows; retain the compact short view. */
+/* History shares the exact column tracks of stones and workstation. */
+.history-count{white-space:pre-line}
+.history-potion{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:9px;border-right:0}
+.history-potion span{white-space:nowrap}
+.history-card-body{grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr)}
+@media(min-width:1000px){
+ .game-grid>.history-panel{padding:0!important;grid-template-columns:subgrid;column-gap:14px}
+ .history-head{display:grid;grid-template-columns:126px auto minmax(70px,1fr);gap:10px;align-items:center;margin:0;padding:16px 21px;min-width:0}
+ .history-head h2{min-width:96px;max-width:126px;width:100%;font-size:14px!important;white-space:nowrap;margin:0!important;padding:5px 6px!important}
+ .history-count{font-size:11px;line-height:1.8;white-space:pre-line}
+ .history-potion-slot{min-width:0}
+ .history-potion-img{width:42px;height:64px;object-fit:contain}
+ .history-potion{gap:6px;font-size:12px}
+ .history-list{width:100%;min-width:0;padding:14px 21px 14px 0}
+ .history-card{padding:8px 10px}
+ .history-card-body{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr);gap:5px}
+ .history-card .comparison-text{font-size:10px;line-height:1.4;text-align:center}
+ .history-card .stone-visual{min-width:0;gap:5px}
+ .history-empty{padding:12px;font-size:12px}
+}
+@media(min-width:1000px) and (max-width:1150px){
+ .history-head{padding-left:17px;padding-right:12px;gap:5px;grid-template-columns:96px auto minmax(65px,1fr)}
+ .history-count{font-size:10px}
+ .history-head h2{font-size:12px!important;letter-spacing:.03em;padding:5px 4px!important}
+ .history-potion-img{width:35px}
+ .history-potion{gap:3px;font-size:11px}
+ .history-list{padding-right:17px}
+}
+/* Distribute extra height through gaps and padding, with bounded artwork sizes. */
 @media(min-width:1000px) and (min-height:760px){
- .game-grid{min-height:calc(100dvh - 174px);grid-template-rows:minmax(369px,1fr) clamp(146px,19dvh,190px)}
+ .game{--section-gap:clamp(10px,1.5dvh,18px);gap:var(--section-gap)}
+ .game-grid{--panel-gap:clamp(14px,2.1dvh,24px);gap:var(--panel-gap);min-height:calc(100dvh - 164px - var(--section-gap));grid-template-rows:minmax(369px,1fr) clamp(146px,18dvh,190px)}
+ .game-grid>.card:not(.history-panel){padding:clamp(17px,2.5dvh,28px) 21px clamp(19px,2.7dvh,30px)!important}
+ .game-grid h2{margin-bottom:clamp(10px,1.8dvh,20px)!important}
  .stones-panel{display:flex;flex-direction:column}
  .stones-panel>h2{align-self:flex-start;width:max-content;flex:0 0 auto}
- .stones-list{flex:1;grid-template-rows:repeat(3,minmax(82px,1fr))}
- .stones-list .stone-image-box{width:clamp(69px,10dvh,108px);height:clamp(74px,12dvh,124px)}
- .stones-list .stone-size-small{width:clamp(49px,7.8dvh,86px);height:clamp(62px,10dvh,104px)}
- .stones-list .stone-size-large{width:clamp(67px,10dvh,106px);height:clamp(73px,12dvh,123px)}
- .cauldron-scene{height:auto;min-height:182px;flex:1}
- .cauldron-scene img{height:clamp(178px,32dvh,360px);max-height:100%;max-width:100%}
- .potions-panel .potion-tile .potion-image{height:clamp(88px,13dvh,150px)}
- .history-list{width:100%}
+ .stones-list{flex:1;gap:clamp(8px,1.5dvh,16px);grid-template-rows:repeat(3,minmax(82px,1fr))}
+ .stones-list .stone-image-box{width:clamp(69px,9dvh,92px);height:clamp(74px,10dvh,104px)}
+ .stones-list .stone-size-small{width:clamp(49px,6.5dvh,68px);height:clamp(62px,8.3dvh,86px)}
+ .stones-list .stone-size-large{width:clamp(67px,8.8dvh,90px);height:clamp(73px,10dvh,103px)}
+ .cauldron-scene{height:auto;min-height:182px;flex:1;margin:clamp(6px,1dvh,12px) 0 clamp(12px,2dvh,24px)}
+ .cauldron-scene img{height:clamp(178px,25dvh,280px);max-height:100%;max-width:100%}
+ .operation-controls{margin-top:0;gap:clamp(9px,1.2dvh,14px)}
+ .operation-controls .button{min-height:clamp(46px,5.4dvh,58px)}
+ .potions-list{gap:clamp(7px,1.2dvh,13px)}
+ .potions-panel .potion-tile .potion-image{height:clamp(88px,12dvh,128px)}
+ .game-grid>.history-panel{column-gap:var(--panel-gap)}
+ .history-head h2{margin:0!important}
 }

@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>ALCHEMY · 2D 炼金实验 v6.5</title>
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="theme_v6_1.css">
-<link rel="stylesheet" href="theme_v6_3.css">
+<link rel="stylesheet" href="styles.css?v=20261024-record-columns">
+<link rel="stylesheet" href="theme_v6_1.css?v=20261024-record-columns">
+<link rel="stylesheet" href="theme_v6_3.css?v=20261024-record-columns">
 </head>
 <body>
 <section id="resourceLoader" class="resource-loader" aria-labelledby="resourceLoaderTitle">
@@ -93,7 +93,7 @@
           <div id="potionsList" class="potions-list"></div>
         </section>
         <section class="card history-panel" aria-labelledby="historyTitle">
-          <div class="history-head"><h2 id="historyTitle">上一次用药</h2><span id="historyCount" class="history-count">等待首次用药</span></div>
+          <div class="history-head"><h2 id="historyTitle">上一次用药</h2><span id="historyCount" class="history-count">等待首次用药</span><div id="historyPotion" class="history-potion-slot"></div></div>
           <div id="history" class="history-list"></div>
         </section>
       </div>
@@ -127,8 +127,8 @@
   <p class="help-footnote">本程序是基于 Alchemy 核心规则改编的二维人类实验，不是 DeepMind 官方程序。v4 为降低任务负荷去除了旋转，仅保留逐 Episode 随机反射。实验数据只保存在此浏览器中。</p>
 </dialog>
 <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
-<script src="alchemy_core.js"></script>
-<script src="app.js"></script>
+<script src="alchemy_core.js?v=20261024-record-columns"></script>
+<script src="app.js?v=20261024-record-columns"></script>
 <script>
 (() => {
   const assets = [

@@ -20,7 +20,7 @@ const IDs=['welcome','game','participantId','episodeCount','trialCount','seed',
  'episodeValue','trialValue','totalValue','mode',
  'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
  'transitionPane','nextBtn','completePane','completeSummary',
- 'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','srFeedback',
+ 'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','historyPotion','srFeedback',
  'actionDialog','actionSub','actionDetails','continueBtn'];
 const dom={};
 let s=null, rng=null, perfZero=performance.now(), elapsedBase=0, historyRenderToken='', animationBusy=false;
@@ -383,7 +383,6 @@ function feedbackMarkup(row){
 }
 function historyMarkup(row){
  return `<div class="history-card-body">
-    <div class="history-potion">${potionArt(row.color,'history-potion-img')}<span>${POTIONS[row.color][0]}药水</span></div>
     ${stateComparisonCard('用药前',row.before)}
     <span class="history-arrow" aria-hidden="true">→</span>
     ${stateComparisonCard('用药后',row.after)}
@@ -392,9 +391,10 @@ function historyMarkup(row){
 function renderHistory(){
  const row=s.episodeHistory.at(-1);
  const token=`${s.episodeIndex}:${s.trialIndex}:${row?.trial}:${row?.actionNumber}:${row?.elapsedMs}`;
- get('historyCount').textContent=row?`Trial ${row.trial} · 原石 ${row.stoneId.slice(1)} · 第 ${row.actionNumber} 次`:'等待首次用药';
+ get('historyCount').textContent=row?`Trial ${row.trial}\n原石 ${row.stoneId.slice(1)}\n第 ${row.actionNumber} 次`:'等待首次用药';
  if(historyRenderToken===token)return;
  historyRenderToken=token;
+ get('historyPotion').innerHTML=row?`<div class="history-potion">${potionArt(row.color,'history-potion-img')}<span>${POTIONS[row.color][0]}</span></div>`:'';
  const root=get('history');root.replaceChildren();
  if(!row){const empty=document.createElement('div');empty.className='history-empty';empty.textContent='使用药水后，这里显示最近一次用药的前后变化。';root.appendChild(empty);return;}
  const card=document.createElement('article');card.className='history-card';
