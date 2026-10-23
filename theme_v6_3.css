@@ -378,3 +378,18 @@ dialog::backdrop{background:rgba(6,5,5,.8);backdrop-filter:blur(5px)}
  .history-card .stone-size-small{height:45px}.history-card .stone-size-large{height:53px}
  .history-card .thermometer{height:55px}.history-card .thermo-tube{height:39px}
 }
+
+/* Grow the workbench with taller desktop windows; retain the compact short view. */
+@media(min-width:1000px) and (min-height:760px){
+ .game-grid{min-height:calc(100dvh - 174px);grid-template-rows:minmax(369px,1fr) clamp(146px,19dvh,190px)}
+ .stones-panel{display:flex;flex-direction:column}
+ .stones-panel>h2{align-self:flex-start;width:max-content;flex:0 0 auto}
+ .stones-list{flex:1;grid-template-rows:repeat(3,minmax(82px,1fr))}
+ .stones-list .stone-image-box{width:clamp(69px,10dvh,108px);height:clamp(74px,12dvh,124px)}
+ .stones-list .stone-size-small{width:clamp(49px,7.8dvh,86px);height:clamp(62px,10dvh,104px)}
+ .stones-list .stone-size-large{width:clamp(67px,10dvh,106px);height:clamp(73px,12dvh,123px)}
+ .cauldron-scene{height:auto;min-height:182px;flex:1}
+ .cauldron-scene img{height:clamp(178px,32dvh,360px);max-height:100%;max-width:100%}
+ .potions-panel .potion-tile .potion-image{height:clamp(88px,13dvh,150px)}
+ .history-list{width:100%}
+}
