@@ -430,7 +430,7 @@ dialog::backdrop{background:rgba(6,5,5,.8);backdrop-filter:blur(5px)}
 }
 
 /* Local weight-variable Chinese serif: heavier engraved headings, clear body copy. */
-@font-face{font-family:"Alchemy Serif";src:url('assets/fonts/alchemy-serif-ui.woff2?v=20261024-trial-history') format('woff2');font-weight:200 900;font-style:normal;font-display:swap}
+@font-face{font-family:"Alchemy Serif";src:url('assets/fonts/alchemy-serif-ui.woff2?v=20261024-history-accordion') format('woff2');font-weight:200 900;font-style:normal;font-display:swap}
 :root{--atlas-font:"Alchemy Serif","Noto Serif SC",Georgia,serif}
 body{font-family:var(--atlas-font);font-weight:650}
 .brand{font-family:var(--atlas-font);font-weight:900;letter-spacing:.14em}
@@ -529,3 +529,16 @@ body{font-family:var(--atlas-font);font-weight:650}
  .game-grid>.potions-panel{grid-column:auto;grid-row:auto}
  .history-panel .history-card-body{grid-template-columns:60px 100px minmax(0,1fr) 18px minmax(0,1fr);gap:8px}
 }
+
+/* Native button disclosure: full-width bar, left title, all rows below. */
+.game>.history-panel{padding:0!important;min-height:76px}
+.history-toggle{display:flex;align-items:center;justify-content:flex-start;width:100%;min-height:76px;padding:18px 28px;border:0;border-radius:0;background:transparent;color:#edce98;font-family:var(--atlas-font);font-weight:850;text-align:left;cursor:pointer;gap:20px}
+.history-toggle:hover:not(:disabled){background:linear-gradient(90deg,rgba(180,131,59,.09),transparent)}
+.history-toggle:focus-visible{outline:2px solid #e7c68c;outline-offset:-9px}
+.history-title{font-size:19px;letter-spacing:.12em;font-weight:900;text-shadow:0 2px 3px #000}
+.history-toggle .history-count{margin-left:auto;font-size:13px;font-weight:700}
+.history-chevron{display:inline-block;flex:0 0 10px;width:10px;height:10px;border-right:2px solid #d6b477;border-bottom:2px solid #d6b477;transform:rotate(45deg);margin:0 3px 5px}
+.history-toggle[aria-expanded="true"] .history-chevron{transform:rotate(225deg);margin-bottom:-5px}
+.history-panel .history-list{padding:0 26px 28px;margin:0}
+.history-toggle[aria-expanded="true"]{margin-bottom:4px}
+@media(max-width:1150px){.history-toggle{padding-left:23px;padding-right:23px}.history-panel .history-list{padding-left:21px;padding-right:21px}}

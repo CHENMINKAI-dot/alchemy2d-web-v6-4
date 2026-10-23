@@ -20,7 +20,7 @@ const IDs=['welcome','game','participantId','episodeCount','trialCount','seed',
  'episodeValue','trialValue','totalValue','mode',
  'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
  'transitionPane','nextBtn','completePane','completeSummary',
- 'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','srFeedback',
+ 'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','historyToggle','srFeedback',
  'actionDialog','actionSub','actionDetails','continueBtn'];
 const dom={};
 let s=null, rng=null, perfZero=performance.now(), elapsedBase=0, historyRenderToken='', animationBusy=false;
@@ -76,7 +76,7 @@ function makeSession(practice){
     potionAllocation:'six_adjacent_same_color_pairs_randomized_once_per_session',actionLimit:null,
     allowEndTrial:false,settlementPolicy:'all_stones_signed_sum',autoSettleWhenPotionsExhausted:true,
     perceptualRotation:false,perceptualReflection:true,
-    historyScope:'current_trial',feedbackAfterPotion:true,
+    historyScope:'current_trial',historyPanelPolicy:'collapsed_initially_and_after_each_potion',historyDecisionTracking:'since_previous_manual_decision_in_current_trial',feedbackAfterPotion:true,
     episodeChemistryPolicy:'unique_full_session_and_all_three_components_change_between_adjacent_episodes',
     effectAnimation:true,depositScorePopup:true};
  }catch(error){window.alert(error.message);return;}
@@ -96,7 +96,7 @@ function makeSession(practice){
   stones:[],potions:[],selectedStone:null,selectedPotion:null,
   actionsThisTrial:0,trialScore:0,episodeScore:0,totalScore:0,
   trialStartedElapsedMs:null,trialStartedUTC:null,episodeStartedElapsedMs:null,
-  currentTrialInitial:null,trialHistory:[],pendingFeedback:null,pendingSettlementReveal:null,
+  currentTrialInitial:null,trialHistory:[],historyExpanded:false,historyDecisionState:{clickCount:0,openCount:0},pendingFeedback:null,pendingSettlementReveal:null,
   trials:[],episodes:[],events:[],chemistryKeys:[],storageWarningShown:false,elapsedSavedMs:0};
  perfZero=performance.now();elapsedBase=0;historyRenderToken='';animationBusy=false;
  record('session_start',{config:copy(config),seed,potionLayout:copy(s.potionLayout)});
@@ -128,6 +128,7 @@ function beginEpisode(){
 function beginTrial(){
  s.trialIndex++;
  s.trialHistory=[];historyRenderToken='';
+ s.historyExpanded=false;s.historyDecisionState={clickCount:0,openCount:0};
  const items=Core.sampleTrialItems(rng,3,12,s.potionLayout);
  s.stones=items.stones;s.potions=items.potions;
  s.selectedStone=null;s.selectedPotion=null;s.actionsThisTrial=0;s.trialScore=0;
@@ -158,6 +159,7 @@ function executePotion(){
  const st=s.stones.find(x=>x.id===s.selectedStone&&!x.submitted);
  const p=s.potions.find(x=>x.id===s.selectedPotion&&!x.used);
  if(!st||!p)return;
+ const historyDecision=consumeHistoryDecision();
  const before=stoneState(st);
  const result=Core.transition(st.latent,p.color,s.chemistry);
  st.latent=[...result.after];p.used=true;s.actionsThisTrial++;s.selectedPotion=null;
@@ -171,11 +173,12 @@ function executePotion(){
   changed:result.changed,localTime:localIso(),elapsedMs:elapsedMs()};
  s.trialHistory.push(row);
  s.pendingFeedback=copy(row);
- record('apply_potion',{stoneId:st.id,potionId:p.id,color:p.color,
+ record('apply_potion',{stoneId:st.id,potionId:p.id,color:p.color,isDecision:true,...historyDecision.fields,
   latentBefore:before.hidden,latentAfter:after.hidden,
   visibleBefore:before.visible,visibleAfter:after.visible,
   rewardBefore:before.reward,rewardAfter:after.reward,
   changed:result.changed,internalReason:result.reason});
+ if(historyDecision.wasExpanded)record('history_auto_collapse',{reason:'potion_action',historyExpanded:false,historyEntryCount:s.trialHistory.length});
  if(s.potions.every(x=>x.used))settleAllStones('potions_exhausted',false);
  animationBusy=true;
  setActionButtonsDisabled();
@@ -190,6 +193,8 @@ function executeDeposit(){
 }
 function settleAllStones(reason,manual){
  if(!s||s.phase!=='playing'||s.stones.every(x=>x.submitted))return null;
+ const historyDecision=manual?consumeHistoryDecision():null;
+ const historyFields=historyDecision?historyDecision.fields:{historyClickedBeforeAction:null,historyClickCountBeforeAction:null,historyOpenCountBeforeAction:null,historyVisibleBeforeAction:null,historyEntriesBeforeAction:null};
  const stones=s.stones.map(stoneState);
  const values=stones.map(x=>x.reward);
  const total=values.reduce((sum,value)=>sum+value,0);
@@ -198,9 +203,10 @@ function settleAllStones(reason,manual){
  if(manual)s.actionsThisTrial++;
  s.trialScore=total;s.episodeScore+=total;s.totalScore+=total;
  s.pendingSettlementReveal={total,values,stones,reason};
- record('deposit_all_stones',{stoneIds:stones.map(x=>x.id),stoneValues:values,stones,
+ record('deposit_all_stones',{isDecision:manual,...historyFields,stoneIds:stones.map(x=>x.id),stoneValues:values,stones,
   reward:total,automatic:!manual,endReason:reason,
   trialScore:total,episodeScore:s.episodeScore,totalScore:s.totalScore});
+ if(historyDecision?.wasExpanded)record('history_auto_collapse',{reason:'manual_settlement',historyExpanded:false,historyEntryCount:s.trialHistory.length});
  finishTrial(reason);
  return s.pendingSettlementReveal;
 }
@@ -216,6 +222,7 @@ async function revealSettlement(){
  }
 }
 function setActionButtonsDisabled(){
+ get('historyToggle').disabled=true;
  get('applyBtn').disabled=true;
  get('depositBtn').disabled=true;
 }
@@ -392,6 +399,7 @@ function historyMarkup(row){
   </div>`;
 }
 function renderHistory(){
+ renderHistoryDisclosure();
  const rows=s.trialHistory;
  const token=`${s.episodeIndex}:${s.trialIndex}:${rows.length}`;
  get('historyCount').textContent=`Trial ${s.trialIndex+1} · ${rows.length} 次用药`;
@@ -404,6 +412,29 @@ function renderHistory(){
   card.innerHTML=historyMarkup(row);root.appendChild(card);
  }
  root.scrollTop=0;
+}
+function renderHistoryDisclosure(){
+ get('historyToggle').setAttribute('aria-expanded',String(!!s.historyExpanded));
+ get('historyToggle').disabled=!!s.pendingFeedback||animationBusy;
+ get('history').classList.toggle('hidden',!s.historyExpanded);
+}
+function toggleHistory(){
+ if(!s||s.pendingFeedback||animationBusy)return;
+ s.historyExpanded=!s.historyExpanded;
+ s.historyDecisionState.clickCount++;
+ if(s.historyExpanded)s.historyDecisionState.openCount++;
+ record('history_toggle',{historyExpanded:s.historyExpanded,historyEntryCount:s.trialHistory.length});
+ renderHistoryDisclosure();
+}
+function consumeHistoryDecision(){
+ const state=s.historyDecisionState;
+ const result={wasExpanded:!!s.historyExpanded,fields:{
+  historyClickedBeforeAction:state.clickCount>0,historyClickCountBeforeAction:state.clickCount,
+  historyOpenCountBeforeAction:state.openCount,historyVisibleBeforeAction:!!s.historyExpanded,
+  historyEntriesBeforeAction:s.trialHistory.length}};
+ s.historyDecisionState={clickCount:0,openCount:0};s.historyExpanded=false;
+ renderHistoryDisclosure();
+ return result;
 }
 function restoreTrialHistory(saved){
  // Full events survive the old latest-only display, so reconstruct the entire
@@ -480,6 +511,7 @@ function payload(){
   actionsPolicy:'apply potion or settle ALL three stones immediately; signed sum includes -3 and -1; exhausting all potions auto-settles; no separate End Trial button',
   animationPolicy:'~1s potion flight; simultaneous three-stone flight followed by ~1.5s combined signed total; reduced motion keeps a static total overlay',
   eventLog:'internalReason and latent states appear ONLY in exported researcher data',
+  historyDecisionFields:'apply_potion and manual deposit_all_stones are decisions. historyClickedBeforeAction means at least one participant click on the History bar since the previous decision in this Trial; counts reset on each decision and Trial start. Automatic settlement has isDecision=false and null history decision fields. history_toggle logs participant toggles; history_auto_collapse logs programmatic closure. This records clicks, not inferred reading or attention.',
   historyScope:'UI shows all potion applications in the current Trial only, newest first; entering the next Trial clears the view; complete actions remain in exported events',
   chemistryNonrepeatPolicy:'every full Chemistry unique throughout a session; graph, potion mapping, and reflection all change versus previous Episode',
   episodeChemistryFingerprints:copy(s.chemistryKeys)},
@@ -513,7 +545,7 @@ function downloadCSV(){
  const keys=['seq','type','sessionId','participantId','practice','episode','trial','utc','localTime','elapsedMs','trialElapsedMs',
   'actionNumber','stoneId','potionId','color','changed','internalReason','latentBefore','latentAfter',
   'visibleBefore','visibleAfter','rewardBefore','rewardAfter','reward','feedbackViewingMs',
-  'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore'];
+  'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore','isDecision','historyClickedBeforeAction','historyClickCountBeforeAction','historyOpenCountBeforeAction','historyVisibleBeforeAction','historyEntriesBeforeAction','historyExpanded','historyEntryCount','reason'];
  const lines=[keys.join(',')];
  for(const e of s.events)lines.push(keys.map(k=>csvField(e[k])).join(','));
  downloadFile(downloadName('csv'),'text/csv;charset=utf-8','\ufeff'+lines.join('\r\n'));
@@ -537,11 +569,16 @@ function restore(){
  s.trialHistory=restoreTrialHistory(saved);
  delete s.episodeHistory;
  s.config.historyScope='current_trial';
+ s.config.historyPanelPolicy='collapsed_initially_and_after_each_potion';
+ s.config.historyDecisionTracking='since_previous_manual_decision_in_current_trial';
+ const historyWasExpanded=!!s.historyExpanded;s.historyExpanded=false;
+ s.historyDecisionState=s.historyDecisionState||{clickCount:0,openCount:0};
  elapsedBase=Math.max(Number(saved.elapsedSavedMs)||0,Date.now()-Date.parse(s.startedAtUTC));
  perfZero=performance.now();historyRenderToken='';animationBusy=false;
  if(s.phase==='playing'&&s.pendingSettlementReveal&&s.stones.every(x=>x.submitted))finishTrial(s.pendingSettlementReveal.reason);
  record('session_restored',{resumeAfterUTC:saved.savedAtUTC,priorElapsedMs:saved.elapsedSavedMs,
   note:'Page reload: reaction times spanning reload need separate treatment'});
+ if(historyWasExpanded)record('history_auto_collapse',{reason:'page_restore',historyExpanded:false,historyEntryCount:s.trialHistory.length});
  render();if(s.pendingSettlementReveal&&!s.pendingFeedback)void revealSettlement();
  notice('实验已恢复。请注意页面重新加载可能影响反应时连续性。');
 }
@@ -549,6 +586,7 @@ function bind(){
  for(const id of IDs){const e=document.getElementById(id);if(!e)throw Error('Missing UI element #'+id);dom[id]=e;}
  get('startBtn').addEventListener('click',()=>makeSession(false));
  get('practiceBtn').addEventListener('click',()=>makeSession(true));
+ get('historyToggle').addEventListener('click',toggleHistory);
  get('applyBtn').addEventListener('click',executePotion);
  get('depositBtn').addEventListener('click',executeDeposit);
  get('nextBtn').addEventListener('click',proceed);
