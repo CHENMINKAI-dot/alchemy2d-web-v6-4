@@ -289,7 +289,7 @@ dialog::backdrop{background:rgba(6,5,5,.8);backdrop-filter:blur(5px)}
 @media(max-width:520px){.fx-score-number{--glyph-scale:.36}}
 
 /* Keep the batch action and full inventories visible together on desktop. */
-@media(min-width:1100px){
+@media(min-width:1000px){
  .topbar{min-height:64px;margin-bottom:14px;padding:10px 0}
  .status-bar{min-height:86px;padding:14px 26px!important;margin-bottom:16px}
  .game-grid{grid-template-columns:minmax(270px,1fr) minmax(290px,1fr) minmax(300px,1.12fr);gap:18px}
@@ -304,4 +304,77 @@ dialog::backdrop{background:rgba(6,5,5,.8);backdrop-filter:blur(5px)}
  .cauldron-scene{height:256px}.cauldron-scene img{max-height:238px}
  .operation-controls{margin-top:auto;gap:9px}
  .operation-controls .button{font-size:14px;min-height:50px;padding:10px 6px!important}
+}
+
+/* One recent comparison stays in view below the desktop workbench. */
+.history-list{margin-top:0}
+.history-head{margin-bottom:10px}
+.history-card{padding:10px 14px}
+.history-panel{grid-column:1/-1}
+.game[data-phase="between"] .operation-controls,.game[data-phase="completed"] .operation-controls{display:none}
+.game[data-phase="completed"] .cauldron-scene{display:none}
+@media(min-width:1000px){
+ .app-shell{padding-bottom:10px}
+ .topbar{min-height:52px;margin-bottom:8px;padding:6px 0}
+ .game{gap:10px}
+ .status-bar{min-height:74px;padding:9px 22px!important;margin-bottom:0}
+ .stat{padding:7px 16px!important}.stat:first-child{padding-left:16px!important}
+ .stat strong{font-size:19px}.stat span{font-size:9px}
+ .game-grid{gap:14px}
+ .game-grid>.card{padding:17px 21px 19px!important}
+ .game-grid h2{min-height:42px;font-size:16px!important;padding:4px 12px!important;margin-bottom:8px!important}
+ .stones-list{gap:8px}
+ .stone-tile{min-height:82px;padding:6px 9px!important;gap:8px}
+ .stone-visual{min-height:72px;min-width:88px;gap:7px}
+ .stone-image-box{width:69px;height:74px}
+ .stone-size-small{width:49px;height:62px}.stone-size-large{width:67px;height:73px}
+ .stone-copy{gap:3px}.stone-copy strong{font-size:14px}.appearance{font-size:11px}
+ .thermometer{height:72px}.thermo-tube{height:56px}.thermo-bulb{width:16px;height:16px}
+ .potions-list{gap:7px}
+ .potion-tile{min-height:86px;padding:5px 3px 7px}
+ .potion-tile .potion-image{height:60px}.potion-tile span{font-size:10px}
+ .cauldron-scene{height:182px}.cauldron-scene img{max-height:178px;width:auto;max-width:100%}
+ .operation-controls .button{min-height:46px;padding:8px 6px!important}
+ .session-pane{margin-top:10px;padding:10px 14px;font-size:12px;gap:8px}
+ .session-pane .button{min-height:46px;padding:9px 10px!important;font-size:14px}
+ .history-panel{display:grid;grid-template-columns:158px minmax(0,1fr);align-items:center;gap:18px;padding:16px 24px!important;min-height:146px}
+ .history-head{display:flex;flex-direction:column;align-items:flex-start;gap:7px;margin:0}
+ .history-head h2{max-width:100%;min-width:142px;min-height:43px;font-size:16px!important;padding:5px 9px!important}
+ .history-count{font-size:11px;text-align:left;line-height:1.6}
+ .history-card{padding:8px 16px}
+ .history-card-body{grid-template-columns:minmax(85px,.7fr) minmax(0,1.3fr) 24px minmax(0,1.3fr);gap:14px}
+ .history-potion-img{height:64px;width:61px}.history-potion{gap:2px}
+ .history-card .comparison-state{gap:2px}
+ .history-card .stone-visual{min-height:62px;gap:8px}
+ .history-card .stone-image-box{width:62px;height:64px}
+ .history-card .stone-size-small{width:44px;height:51px}.history-card .stone-size-large{width:59px;height:63px}
+ .history-card .thermometer{transform:none;height:65px;width:16px;margin:0}
+ .history-card .thermo-tube{height:49px}
+ .history-card .comparison-text{font-size:11px}.history-card .compare-label{font-size:11px}
+ .history-empty{min-height:96px;display:flex;align-items:center;padding:12px 16px}
+ .stones-panel{grid-column:1;grid-row:1}
+ .workstation{grid-column:2;grid-row:1}
+ .potions-panel{grid-column:3;grid-row:1/3;display:flex;flex-direction:column;min-height:0}
+ .potions-panel>h2{align-self:flex-start;width:max-content;flex:0 0 auto}
+ .potions-panel .potions-list{flex:1;grid-auto-rows:1fr;min-height:0}
+ .potions-panel .potion-tile .potion-image{height:88px;max-width:100%}
+ .game-grid>.history-panel{grid-column:1/3;grid-row:2;grid-template-columns:136px minmax(0,1fr);gap:12px;padding:14px 20px!important}
+ .history-head h2{min-width:126px}
+ .history-card-body{grid-template-columns:58px minmax(0,1fr) 18px minmax(0,1fr);gap:8px}
+}
+@media(min-width:1000px) and (max-height:690px){
+ .topbar{min-height:48px;padding:4px 0}
+ .status-bar{min-height:70px;padding:7px 22px!important}
+ .stone-tile{min-height:70px;padding:5px 9px!important}
+ .stone-visual{min-height:60px}.stone-image-box{height:60px}
+ .stone-size-small{height:50px}.stone-size-large{height:59px}
+ .thermometer{height:60px}.thermo-tube{height:44px}
+ .potion-tile{min-height:72px}.potion-tile .potion-image{height:48px}
+ .cauldron-scene{height:158px}.cauldron-scene img{max-height:154px}
+ .game[data-phase="between"] .cauldron-scene{height:130px}
+ .game-grid>.history-panel{min-height:132px;padding:12px 20px!important}
+ .potions-panel .potion-tile .potion-image{height:76px}
+ .history-card .stone-visual{min-height:52px}.history-card .stone-image-box{height:54px}
+ .history-card .stone-size-small{height:45px}.history-card .stone-size-large{height:53px}
+ .history-card .thermometer{height:55px}.history-card .thermo-tube{height:39px}
 }

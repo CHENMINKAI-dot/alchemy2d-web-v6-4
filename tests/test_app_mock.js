@@ -43,6 +43,7 @@ async function flush(){for(let i=0;i<8;i++) await Promise.resolve();}
  let a=make();a.click('startBtn');let s=a.state();
  assert.equal(s.phase,'playing');assert.equal(s.config.allowEndTrial,false);
  assert.equal(a.els.endTrialBtn,undefined,'Separate end button must not exist');
+ assert.equal(a.els.trialSummary,undefined,'The arithmetic settlement text is removed');
  assert.equal(a.els.depositBtn.disabled,false,'Batch settlement needs no selected stone');
  const fixed=[...s.potionLayout];Core.checkPotionLayout(fixed);
  a.els.stonesList.children[0].click();a.els.potionsList.children[0].click();a.click('applyBtn');
@@ -68,6 +69,10 @@ async function flush(){for(let i=0;i<8;i++) await Promise.resolve();}
  a.els.stonesList.children[0].click();
  for(let k=0;k<12;k++){
   a.els.potionsList.children[k].click();a.click('applyBtn');await flush();
+  assert.equal(a.state().episodeHistory.length,1,'Visible history retains exactly the latest application');
+  assert.equal(a.state().episodeHistory[0].potionId,`P${k+1}`);
+  assert.equal(a.els.history.children.length,1);
+  assert(a.els.historyCount.textContent.includes(`第 ${k+1} 次`),'Latest card updates on every action');
   assert.equal(a.els.actionDialog.open,true);
   if(k<11)assert.equal(a.state().phase,'playing');
   else{

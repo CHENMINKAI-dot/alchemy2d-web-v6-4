@@ -19,7 +19,7 @@ const IDs=['welcome','game','participantId','episodeCount','trialCount','seed',
  'helpBtn','helpDialog','closeHelpBtn','startBtn','practiceBtn',
  'episodeValue','trialValue','totalValue','mode',
  'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
- 'transitionPane','trialSummary','nextBtn','completePane','completeSummary',
+ 'transitionPane','nextBtn','completePane','completeSummary',
  'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','srFeedback',
  'actionDialog','actionSub','actionDetails','continueBtn'];
 const dom={};
@@ -76,7 +76,7 @@ function makeSession(practice){
     potionAllocation:'six_adjacent_same_color_pairs_randomized_once_per_session',actionLimit:null,
     allowEndTrial:false,settlementPolicy:'all_stones_signed_sum',autoSettleWhenPotionsExhausted:true,
     perceptualRotation:false,perceptualReflection:true,
-    historyScope:'episode',feedbackAfterPotion:true,
+    historyScope:'last_potion_in_episode',feedbackAfterPotion:true,
     episodeChemistryPolicy:'unique_full_session_and_all_three_components_change_between_adjacent_episodes',
     effectAnimation:true,depositScorePopup:true};
  }catch(error){window.alert(error.message);return;}
@@ -168,7 +168,7 @@ function executePotion(){
   before:{visible:copy(before.visible),reward:before.reward},
   after:{visible:copy(after.visible),reward:after.reward},
   changed:result.changed,localTime:localIso(),elapsedMs:elapsedMs()};
- s.episodeHistory.push(row);
+ s.episodeHistory=[row];
  s.pendingFeedback=copy(row);
  record('apply_potion',{stoneId:st.id,potionId:p.id,color:p.color,
   latentBefore:before.hidden,latentAfter:after.hidden,
@@ -382,8 +382,7 @@ function feedbackMarkup(row){
   ${stateComparisonCard('用药后',row.after)}</div>`;
 }
 function historyMarkup(row){
- return `<div class="history-card-head"><span>第 ${row.actionNumber} 次行动</span><span>原石 ${escapeHtml(row.stoneId.slice(1))}</span></div>
-  <div class="history-card-body">
+ return `<div class="history-card-body">
     <div class="history-potion">${potionArt(row.color,'history-potion-img')}<span>${POTIONS[row.color][0]}药水</span></div>
     ${stateComparisonCard('用药前',row.before)}
     <span class="history-arrow" aria-hidden="true">→</span>
@@ -391,23 +390,15 @@ function historyMarkup(row){
   </div>`;
 }
 function renderHistory(){
- const token=`${s.episodeIndex}:${s.trialIndex}:${s.episodeHistory.length}`;
- get('historyCount').textContent=`本 Episode · ${s.episodeHistory.length} 次`;
+ const row=s.episodeHistory.at(-1);
+ const token=`${s.episodeIndex}:${s.trialIndex}:${row?.trial}:${row?.actionNumber}:${row?.elapsedMs}`;
+ get('historyCount').textContent=row?`Trial ${row.trial} · 原石 ${row.stoneId.slice(1)} · 第 ${row.actionNumber} 次`:'等待首次用药';
  if(historyRenderToken===token)return;
  historyRenderToken=token;
  const root=get('history');root.replaceChildren();
- for(let t=s.trialIndex+1;t>=1;t--){
-  const cards=s.episodeHistory.filter(e=>e.trial===t).reverse();
-  const group=document.createElement('details');
-  group.className='trial-group';group.open=t===s.trialIndex+1;
-  const heading=document.createElement('summary');
-  heading.textContent=`Trial ${t}  ·  ${cards.length} 次用药`;
-  group.appendChild(heading);
-  const grid=document.createElement('div');grid.className='history-cards';
-  if(!cards.length){const empty=document.createElement('div');empty.className='history-empty';empty.textContent='暂无用药记录';grid.appendChild(empty);}
-  else for(const row of cards){const card=document.createElement('article');card.className='history-card';card.innerHTML=historyMarkup(row);grid.appendChild(card);}
-  group.appendChild(grid);root.appendChild(group);
- }
+ if(!row){const empty=document.createElement('div');empty.className='history-empty';empty.textContent='使用药水后，这里显示最近一次用药的前后变化。';root.appendChild(empty);return;}
+ const card=document.createElement('article');card.className='history-card';
+ card.innerHTML=historyMarkup(row);root.appendChild(card);
 }
 function showFeedbackIfNeeded(){
  if(!s||!s.pendingFeedback)return;
@@ -433,6 +424,7 @@ function continueAfterFeedback(){
 function render(){
  if(!s){get('welcome').classList.remove('hidden');get('game').classList.add('hidden');return;}
  get('welcome').classList.add('hidden');get('game').classList.remove('hidden');
+ get('game').setAttribute('data-phase',s.phase);
  get('episodeValue').textContent=`${s.episodeIndex+1} / ${s.config.episodes}`;
  get('trialValue').textContent=`${s.trialIndex+1} / ${s.config.trialsPerEpisode}`;
  get('totalValue').textContent=s.totalScore;
@@ -449,8 +441,6 @@ function render(){
  get('transitionPane').classList.toggle('hidden',s.phase!=='between'||animationBusy||!!s.pendingFeedback);
  get('completePane').classList.toggle('hidden',s.phase!=='completed');
  if(s.phase==='between'){
-  const expression=s.stones.map(x=>Core.reward(x.latent)).map(v=>v<0?`(${v})`:String(v)).join(' + ');
-  get('trialSummary').textContent=`三块石头合计：${expression} = ${s.trialScore} 分。`;
   get('nextBtn').textContent=s.trialIndex+1<s.config.trialsPerEpisode?'进入下一 Trial':
    (s.episodeIndex+1<s.config.episodes?'进入下一 Episode':'完成实验');
  }else if(s.phase==='completed'){
@@ -476,7 +466,7 @@ function payload(){
   actionsPolicy:'apply potion or settle ALL three stones immediately; signed sum includes -3 and -1; exhausting all potions auto-settles; no separate End Trial button',
   animationPolicy:'~1s potion flight; simultaneous three-stone flight followed by ~1.5s combined signed total; reduced motion keeps a static total overlay',
   eventLog:'internalReason and latent states appear ONLY in exported researcher data',
-  historyScope:'potion applications within current Episode, carried over between its Trials',
+  historyScope:'UI shows only the latest potion application within the current Episode; complete actions remain in exported events',
   chemistryNonrepeatPolicy:'every full Chemistry unique throughout a session; graph, potion mapping, and reflection all change versus previous Episode',
   episodeChemistryFingerprints:copy(s.chemistryKeys)},
   episodes:copy(s.episodes),trials:copy(s.trials),events:copy(s.events),
@@ -530,6 +520,8 @@ function restore(){
    '检测到 v6.5 实验备份。是否恢复目前的进度和操作记录？';
  if(!window.confirm(message))return;
  s=saved;rng=Core.makeRng(s.seed);rng.restore(saved.rngState>>>0);
+ s.episodeHistory=(s.episodeHistory||[]).slice(-1);
+ s.config.historyScope='last_potion_in_episode';
  elapsedBase=Math.max(Number(saved.elapsedSavedMs)||0,Date.now()-Date.parse(s.startedAtUTC));
  perfZero=performance.now();historyRenderToken='';animationBusy=false;
  if(s.phase==='playing'&&s.pendingSettlementReveal&&s.stones.every(x=>x.submitted))finishTrial(s.pendingSettlementReveal.reason);
