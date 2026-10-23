@@ -73,7 +73,7 @@ async function flush(){for(let i=0;i<8;i++) await Promise.resolve();}
   assert.equal(a.state().episodeHistory[0].potionId,`P${k+1}`);
   assert.equal(a.els.history.children.length,1);
   assert.equal(a.els.historyCount.textContent.split('\n').length,3,'Trial, stone, and action use separate lines');
-  assert.match(a.els.historyPotion.innerHTML,/<span>(红色|橙色|黄色|绿色|青绿色|粉色)<\/span>/,'History label contains only its color');
+  assert.match(a.els.historyPotion.innerHTML,/<span class="history-potion-color">(红色|橙色|黄色|绿色|青绿色|粉色)<\/span>/,'History label contains only its color');
   assert(a.els.historyCount.textContent.includes(`第 ${k+1} 次`),'Latest card updates on every action');
   assert.equal(a.els.actionDialog.open,true);
   if(k<11)assert.equal(a.state().phase,'playing');

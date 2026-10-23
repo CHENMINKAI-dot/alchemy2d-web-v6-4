@@ -394,7 +394,7 @@ function renderHistory(){
  get('historyCount').textContent=row?`Trial ${row.trial}\n原石 ${row.stoneId.slice(1)}\n第 ${row.actionNumber} 次`:'等待首次用药';
  if(historyRenderToken===token)return;
  historyRenderToken=token;
- get('historyPotion').innerHTML=row?`<div class="history-potion">${potionArt(row.color,'history-potion-img')}<span>${POTIONS[row.color][0]}</span></div>`:'';
+ get('historyPotion').innerHTML=row?`<div class="history-potion"><span class="history-potion-label">药水</span>${potionArt(row.color,'history-potion-img')}<span class="history-potion-color">${POTIONS[row.color][0]}</span></div>`:'';
  const root=get('history');root.replaceChildren();
  if(!row){const empty=document.createElement('div');empty.className='history-empty';empty.textContent='使用药水后，这里显示最近一次用药的前后变化。';root.appendChild(empty);return;}
  const card=document.createElement('article');card.className='history-card';
