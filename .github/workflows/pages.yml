@@ -31,6 +31,9 @@ jobs:
           cp index.html app.js alchemy_core.js styles.css theme_v6_1.css theme_v6_3.css site/
           cp -r assets site/assets
           rm -rf site/assets/ui/source_art
+          # The signed total display reads this atlas at runtime.
+          mkdir -p site/assets/ui/source_art
+          cp assets/ui/source_art/gothic_numeral_atlas.png site/assets/ui/source_art/
       - name: Upload website artifact
         uses: actions/upload-pages-artifact@v3
         with:

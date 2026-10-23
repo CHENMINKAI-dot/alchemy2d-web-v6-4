@@ -1,10 +1,10 @@
-/* Alchemy 2D human study, v6.1 — v5.2 engine with gothic UI and sprite score art. */
+/* Alchemy 2D v6.5: one-click signed settlement of all three stones. */
 (() => {
 'use strict';
 const Core=window.AlchemyCore;
 if(!Core) throw Error('alchemy_core.js 未正确载入');
-const VERSION='5.2.0';
-const STORAGE_KEY='alchemy_human_experiment_v5_2_session';
+const VERSION='6.5.0-signed-batch';
+const STORAGE_KEY='alchemy_human_experiment_v6_5_signed_batch_session';
 const POTIONS={
  red:['红色','potion_red.png'], green:['绿色','potion_green.png'],
  yellow:['黄色','potion_yellow.png'], orange:['橙色','potion_orange.png'],
@@ -18,7 +18,7 @@ const VALUE_CLASSES=['value-low','value-midlow','value-midhigh','value-high'];
 const IDs=['welcome','game','participantId','episodeCount','trialCount','seed',
  'helpBtn','helpDialog','closeHelpBtn','startBtn','practiceBtn',
  'episodeValue','trialValue','totalValue','mode',
- 'stonesList','potionsList','applyBtn','depositBtn','endTrialBtn','cauldronScene','fxLayer',
+ 'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
  'transitionPane','trialSummary','nextBtn','completePane','completeSummary',
  'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','srFeedback',
  'actionDialog','actionSub','actionDetails','continueBtn'];
@@ -74,7 +74,8 @@ function makeSession(practice){
     trialsPerEpisode:practice?2:numberInput('trialCount',1,20),
     stonesPerTrial:3,potionsPerTrial:12,potionsPerColor:2,
     potionAllocation:'six_adjacent_same_color_pairs_randomized_once_per_session',actionLimit:null,
-    allowEndTrial:true,perceptualRotation:false,perceptualReflection:true,
+    allowEndTrial:false,settlementPolicy:'all_stones_signed_sum',autoSettleWhenPotionsExhausted:true,
+    perceptualRotation:false,perceptualReflection:true,
     historyScope:'episode',feedbackAfterPotion:true,
     episodeChemistryPolicy:'unique_full_session_and_all_three_components_change_between_adjacent_episodes',
     effectAnimation:true,depositScorePopup:true};
@@ -86,7 +87,7 @@ function makeSession(practice){
  const seed=typed?Number(typed)>>>0:Core.normalizeSeed('');
  const participantId=get('participantId').value.trim();
  if(!participantId){window.alert('请填写被试编号。');return;}
- if(s && s.phase!=='completed'&&!window.confirm('开始新实验将覆盖当前 v5.2 会话的自动备份。确定继续吗？'))return;
+ if(s && s.phase!=='completed'&&!window.confirm('开始新实验将覆盖当前 v6.5 会话的自动备份。确定继续吗？'))return;
  rng=Core.makeRng(seed);
  s={version:VERSION,sessionId:sessionId(),participantId,practice,config,seed,
   potionLayout:Core.makePotionLayout(rng),
@@ -95,7 +96,7 @@ function makeSession(practice){
   stones:[],potions:[],selectedStone:null,selectedPotion:null,
   actionsThisTrial:0,trialScore:0,episodeScore:0,totalScore:0,
   trialStartedElapsedMs:null,trialStartedUTC:null,episodeStartedElapsedMs:null,
-  currentTrialInitial:null,episodeHistory:[],pendingFeedback:null,
+  currentTrialInitial:null,episodeHistory:[],pendingFeedback:null,pendingSettlementReveal:null,
   trials:[],episodes:[],events:[],chemistryKeys:[],storageWarningShown:false,elapsedSavedMs:0};
  perfZero=performance.now();elapsedBase=0;historyRenderToken='';animationBusy=false;
  record('session_start',{config:copy(config),seed,potionLayout:copy(s.potionLayout)});
@@ -129,7 +130,7 @@ function beginTrial(){
  const items=Core.sampleTrialItems(rng,3,12,s.potionLayout);
  s.stones=items.stones;s.potions=items.potions;
  s.selectedStone=null;s.selectedPotion=null;s.actionsThisTrial=0;s.trialScore=0;
- s.pendingFeedback=null;
+ s.pendingFeedback=null;s.pendingSettlementReveal=null;
  s.currentTrialInitial={stones:s.stones.map(stoneState),potions:copy(s.potions)};
  s.trialStartedElapsedMs=elapsedMs();s.trialStartedUTC=new Date().toISOString();s.phase='playing';
  record('trial_start',{initial:copy(s.currentTrialInitial),rngState:rng.state()});
@@ -174,6 +175,7 @@ function executePotion(){
   visibleBefore:before.visible,visibleAfter:after.visible,
   rewardBefore:before.reward,rewardAfter:after.reward,
   changed:result.changed,internalReason:result.reason});
+ if(s.potions.every(x=>x.used))settleAllStones('potions_exhausted',false);
  animationBusy=true;
  setActionButtonsDisabled();
  playActionEffect('potion',st.id,p.id,p.color,before.visible)
@@ -182,32 +184,39 @@ function executePotion(){
 }
 function executeDeposit(){
  if(!s||s.phase!=='playing'||s.pendingFeedback||animationBusy)return;
- const st=s.stones.find(x=>x.id===s.selectedStone&&!x.submitted);
- if(!st)return;
- const before=stoneState(st),reward=before.reward;
- st.submitted=true;s.selectedStone=null;s.selectedPotion=null;s.actionsThisTrial++;
- s.trialScore+=reward;s.episodeScore+=reward;s.totalScore+=reward;
- record('deposit_stone',{stoneId:st.id,latentBefore:before.hidden,visibleBefore:before.visible,
-  reward,trialScore:s.trialScore,episodeScore:s.episodeScore,totalScore:s.totalScore});
- if(s.stones.every(x=>x.submitted)) finishTrial('all_stones_deposited');
- animationBusy=true;
- setActionButtonsDisabled();
- playActionEffect('deposit',st.id,null,null,before.visible,reward)
-  .catch(error=>console.warn('投入动画异常，继续结算',error))
-  .finally(()=>{animationBusy=false;render();notice('石头已投入坩埚，得分已累计');});
+ if(!settleAllStones('all_stones_deposited',true))return;
+ void revealSettlement();
 }
-function executeEndTrial(){
- if(!s||s.phase!=='playing'||s.pendingFeedback||animationBusy)return;
- record('end_trial_action',{submittedCount:s.stones.filter(x=>x.submitted).length,
-  unsubmittedCount:s.stones.filter(x=>!x.submitted).length});
- finishTrial('participant_end');
- render();
- notice('本轮已经结算');
+function settleAllStones(reason,manual){
+ if(!s||s.phase!=='playing'||s.stones.every(x=>x.submitted))return null;
+ const stones=s.stones.map(stoneState);
+ const values=stones.map(x=>x.reward);
+ const total=values.reduce((sum,value)=>sum+value,0);
+ for(const stone of s.stones)stone.submitted=true;
+ s.selectedStone=null;s.selectedPotion=null;
+ if(manual)s.actionsThisTrial++;
+ s.trialScore=total;s.episodeScore+=total;s.totalScore+=total;
+ s.pendingSettlementReveal={total,values,stones,reason};
+ record('deposit_all_stones',{stoneIds:stones.map(x=>x.id),stoneValues:values,stones,
+  reward:total,automatic:!manual,endReason:reason,
+  trialScore:total,episodeScore:s.episodeScore,totalScore:s.totalScore});
+ finishTrial(reason);
+ return s.pendingSettlementReveal;
+}
+async function revealSettlement(){
+ if(!s?.pendingSettlementReveal||s.pendingFeedback||animationBusy)return;
+ const snapshot=copy(s.pendingSettlementReveal);
+ animationBusy=true;setActionButtonsDisabled();render();
+ try{await playBatchDepositEffect(snapshot);}
+ catch(error){console.warn('统一投入动画异常，结算已保存',error);}
+ finally{
+  s.pendingSettlementReveal=null;animationBusy=false;writeSave();render();
+  notice(`三块石头已统一结算，本轮 ${snapshot.total>=0?'+':''}${snapshot.total} 分`);
+ }
 }
 function setActionButtonsDisabled(){
  get('applyBtn').disabled=true;
  get('depositBtn').disabled=true;
- get('endTrialBtn').disabled=true;
 }
 function centerOf(element){
  if(!element||typeof element.getBoundingClientRect!=='function')return null;
@@ -216,19 +225,39 @@ function centerOf(element){
  return {x:r.left+r.width/2,y:r.top+r.height/2};
 }
 function showDepositScore(reward,stoneId){
- // Keep v6.3's Gothic score numerals, but show the numeral ALONE.
- // No fiery frame, dimming backdrop, caption, suffix or additional text.
- // The existing 1500ms input lock and scoring/data behavior are unchanged.
- const shade=VALUE_CLASSES[valueIndex(reward)];
+ // Compose any signed total from the user's atlas, including totals such as -5/+13/+45.
  const signed=(reward>0?'+':'')+String(reward);
- const sprite=reward===15?'plus15':reward===1?'plus1':reward===-1?'minus1':'minus3';
  const stage=get('fxLayer');
- stage.innerHTML=`<div class="fx-score-number ${shade}" data-score="${signed}" role="presentation">
-   <img class="fx-score-sprite" src="assets/ui/score_${sprite}.webp" alt="" aria-hidden="true">
-  </div>`;
- record('deposit_score_shown',{stoneId,reward,displayedScore:signed,durationPlannedMs:1500});
- notice(`本次投入得分 ${signed} 分`);
+ const boxes={
+  '0':[65,0,290,318],'1':[356,0,240,330],'2':[592,0,260,322],
+  '3':[854,0,275,325],'4':[1130,0,294,322],
+  '5':[55,320,295,301],'6':[353,322,246,300],'7':[601,322,245,298],
+  '8':[849,320,278,301],'9':[1130,319,280,301],
+  '+':[158,620,239,207],'-':[402,644,252,149]
+ };
+ const glyphs=[...signed].map(char=>{
+  const [x,y,w,h]=boxes[char];
+  return `<span class="score-atlas-glyph" data-glyph="${char}" style="--glyph-x:${-x}px;--glyph-y:${-y}px;--glyph-w:${w}px;--glyph-h:${h}px"></span>`;
+ }).join('');
+ stage.innerHTML=`<div class="fx-score-number" data-score="${signed}" role="presentation">${glyphs}</div>`;
+ record('deposit_score_shown',{stoneIds:stoneId,reward,displayedScore:signed,durationPlannedMs:1500});
+ notice(`本轮三块石头合计 ${signed} 分`);
  return new Promise(resolve=>window.setTimeout(()=>{stage.replaceChildren();resolve();},1500));
+}
+function playBatchDepositEffect(snapshot){
+ const reduceMotion=typeof window.matchMedia==='function'&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+ if(typeof document.querySelector!=='function')return Promise.resolve();
+ const dest=get('cauldronScene'),b=centerOf(dest),stage=get('fxLayer');
+ if(reduceMotion||!b)return showDepositScore(snapshot.total,snapshot.stones.map(x=>x.id));
+ const travelers=snapshot.stones.map(stone=>{
+  const a=centerOf(document.querySelector(`#stonesList [data-stone-id="${stone.id}"]`));
+  if(!a)return '';
+  return `<div class="fx-traveler fx-deposit" style="left:${a.x}px;top:${a.y}px;--travel-x:${b.x-a.x}px;--travel-y:${b.y-a.y}px">${stoneImage(stone.visible)}<span class="fx-trail"></span></div>`;
+ }).join('');
+ stage.innerHTML=travelers;dest.classList.add('fx-cauldron-active');
+ return new Promise(resolve=>window.setTimeout(()=>{
+  stage.replaceChildren();dest.classList.remove('fx-cauldron-active');resolve();
+ },1120)).then(()=>showDepositScore(snapshot.total,snapshot.stones.map(x=>x.id)));
 }
 function playActionEffect(kind,stoneId,potionId,color,visibleBefore,reward=null){
  // Model state and local backup are committed before animation starts; a refresh
@@ -270,13 +299,16 @@ function finishTrial(reason){
   startUTC:s.trialStartedUTC,endUTC:new Date().toISOString(),durationMs:trialElapsed(),
   endReason:reason,actionsPerformed:s.actionsThisTrial,
   score:s.trialScore,cumulativeEpisodeScore:s.episodeScore,cumulativeSessionScore:s.totalScore,
+  stoneValues:s.stones.map(x=>Core.reward(x.latent)),
+  potionsUsed:s.potions.filter(x=>x.used).length,
+  rawValueDelta:s.trialScore-s.currentTrialInitial.stones.reduce((sum,x)=>sum+x.reward,0),
   initial:copy(s.currentTrialInitial),final:{stones:s.stones.map(stoneState),potions:copy(s.potions)},
   chemistry:copy(s.chemistry)};
  s.trials.push(summary);s.phase='between';
  record('trial_end',{endReason:reason,trialScore:s.trialScore});
 }
 function proceed(){
- if(!s||s.phase!=='between'||s.pendingFeedback)return;
+ if(!s||s.phase!=='between'||s.pendingFeedback||animationBusy||s.pendingSettlementReveal)return;
  if(s.trialIndex+1<s.config.trialsPerEpisode){beginTrial();return;}
  s.episodes.push({participantId:s.participantId,episode:s.episodeIndex+1,
   episodeScore:s.episodeScore,chemistry:copy(s.chemistry),durationMs:elapsedMs()-s.episodeStartedElapsedMs});
@@ -396,7 +428,7 @@ function continueAfterFeedback(){
  get('actionDialog').close();
  s.pendingFeedback=null;
  record('feedback_continue',{stoneId:row.stoneId,potionId:row.potionId,color:row.color,feedbackViewingMs:durationMs});
- render();
+ if(s.pendingSettlementReveal)void revealSettlement();else render();
 }
 function render(){
  if(!s){get('welcome').classList.remove('hidden');get('game').classList.add('hidden');return;}
@@ -412,12 +444,13 @@ function render(){
  const stone=s.stones.find(x=>x.id===s.selectedStone&&!x.submitted);
  const potion=s.potions.find(x=>x.id===s.selectedPotion&&!x.used);
  get('applyBtn').disabled=!(active&&stone&&potion);
- get('depositBtn').disabled=!(active&&stone);
- get('endTrialBtn').disabled=!active;
- get('transitionPane').classList.toggle('hidden',s.phase!=='between');
+ get('depositBtn').disabled=!(active&&s.stones.some(x=>!x.submitted));
+ get('nextBtn').disabled=animationBusy||!!s.pendingFeedback||!!s.pendingSettlementReveal;
+ get('transitionPane').classList.toggle('hidden',s.phase!=='between'||animationBusy||!!s.pendingFeedback);
  get('completePane').classList.toggle('hidden',s.phase!=='completed');
  if(s.phase==='between'){
-  get('trialSummary').textContent=`本 Trial 共 ${s.actionsThisTrial} 次行动，获得 ${s.trialScore>=0?'+':''}${s.trialScore} 分。`;
+  const expression=s.stones.map(x=>Core.reward(x.latent)).map(v=>v<0?`(${v})`:String(v)).join(' + ');
+  get('trialSummary').textContent=`三块石头合计：${expression} = ${s.trialScore} 分。`;
   get('nextBtn').textContent=s.trialIndex+1<s.config.trialsPerEpisode?'进入下一 Trial':
    (s.episodeIndex+1<s.config.episodes?'进入下一 Episode':'完成实验');
  }else if(s.phase==='completed'){
@@ -430,18 +463,18 @@ function payload(){
  return {metadata:{app:'Alchemy 2D Human Study',version:VERSION,
   reference:'Wang et al. (2021), Alchemy, NeurIPS',
   sourceCodeReference:'https://github.com/google-deepmind/dm_alchemy',
-  note:'Independent human-interface adaptation, NOT the official DeepMind game. v5.2 randomly positions six adjacent same-color bottle pairs ONCE per session, avoids placing opposite-color groups on the same row, and reveals numeric rewards after deposit.',
+  note:'Independent human-interface adaptation. v6.5 settles all three stones together, including negative values, and composes their signed total from the Gothic numeral atlas.',
   participantId:s.participantId,sessionId:s.sessionId,practice:s.practice,
   sessionStartUTC:s.startedAtUTC,sessionStartLocal:s.startedAtLocal,
   exportedAtUTC:new Date().toISOString(),phase:s.phase,seed:s.seed,config:s.config,
   cumulativeScore:s.totalScore,
   timeMetric:'performance.now milliseconds (session clock includes wall time after page reload; inspect session_restored events)',
-  visibleValue:'Four-level monochrome fill-height thermometer: blue(1/4), light blue(2/4), light orange(3/4), orange(4/4); no numerical labels during play',
+  visibleValue:'Thermometer value colors are explicitly disclosed: blue=-3, light blue=-1, light orange=+1, orange=+15',
   stoneMapping:'perEpisode reflections only: size/colour/shape = reflect * latent; rotation=0',
   potionPresentation:'six randomized same-color two-bottle groups; each row has two groups that are not opposite colors; fixed 4-column by 3-row slots across Trials; used slots remain in place',
   potionSlotLayout:copy(s.potionLayout),
-  actionsPolicy:'no action-count limit; End Trial settles submitted stones immediately; all-three-submitted auto-finishes',
-  animationPolicy:'~1s potion flight; ~1.1s stone flight followed by ~1.5s prominently animated numerical deposit score; reduced motion keeps a static score overlay',
+  actionsPolicy:'apply potion or settle ALL three stones immediately; signed sum includes -3 and -1; exhausting all potions auto-settles; no separate End Trial button',
+  animationPolicy:'~1s potion flight; simultaneous three-stone flight followed by ~1.5s combined signed total; reduced motion keeps a static total overlay',
   eventLog:'internalReason and latent states appear ONLY in exported researcher data',
   historyScope:'potion applications within current Episode, carried over between its Trials',
   chemistryNonrepeatPolicy:'every full Chemistry unique throughout a session; graph, potion mapping, and reflection all change versus previous Episode',
@@ -460,7 +493,7 @@ function downloadFile(name,mime,data){
 }
 function downloadName(ext){
  const participant=s.participantId.replace(/[^A-Za-z0-9_-]/g,'_').slice(0,36)||'participant';
- return `Alchemy_v5_2_${participant}_${s.practice?'practice':'formal'}_${s.sessionId.slice(-10)}.${ext}`;
+ return `Alchemy_v6_5_signed_${participant}_${s.practice?'practice':'formal'}_${s.sessionId.slice(-10)}.${ext}`;
 }
 function downloadJSON(){
  if(!s||s.phase!=='completed')return;
@@ -476,14 +509,14 @@ function downloadCSV(){
  const keys=['seq','type','sessionId','participantId','practice','episode','trial','utc','localTime','elapsedMs','trialElapsedMs',
   'actionNumber','stoneId','potionId','color','changed','internalReason','latentBefore','latentAfter',
   'visibleBefore','visibleAfter','rewardBefore','rewardAfter','reward','feedbackViewingMs',
-  'trialScore','episodeScore','totalScore','endReason','seed','config','submittedCount','unsubmittedCount'];
+  'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore'];
  const lines=[keys.join(',')];
  for(const e of s.events)lines.push(keys.map(k=>csvField(e[k])).join(','));
  downloadFile(downloadName('csv'),'text/csv;charset=utf-8','\ufeff'+lines.join('\r\n'));
  notice('CSV 数据下载已开始');
 }
 function clearAndSetup(){
- if(s&&!window.confirm('返回设置将清除当前 v5.2 会话的本地恢复备份。请先确认数据已经下载。'))return;
+ if(s&&!window.confirm('返回设置将清除当前 v6.5 会话的本地恢复备份。请先确认数据已经下载。'))return;
  s=null;rng=null;historyRenderToken='';animationBusy=false;
  try{localStorage.removeItem(STORAGE_KEY);}catch(error){console.warn(error);}
  get('actionDialog').open&&get('actionDialog').close();
@@ -493,15 +526,17 @@ function restore(){
  let saved;
  try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');}catch(error){return;}
  if(!saved||saved.version!==VERSION||!Array.isArray(saved.events))return;
- const message=saved.phase==='completed'?'检测到已完成的 v5.2 实验。是否恢复，以便导出数据？':
-   '检测到 v5.2 实验备份。是否恢复目前的进度和操作记录？';
+ const message=saved.phase==='completed'?'检测到已完成的 v6.5 实验。是否恢复，以便导出数据？':
+   '检测到 v6.5 实验备份。是否恢复目前的进度和操作记录？';
  if(!window.confirm(message))return;
  s=saved;rng=Core.makeRng(s.seed);rng.restore(saved.rngState>>>0);
  elapsedBase=Math.max(Number(saved.elapsedSavedMs)||0,Date.now()-Date.parse(s.startedAtUTC));
  perfZero=performance.now();historyRenderToken='';animationBusy=false;
+ if(s.phase==='playing'&&s.pendingSettlementReveal&&s.stones.every(x=>x.submitted))finishTrial(s.pendingSettlementReveal.reason);
  record('session_restored',{resumeAfterUTC:saved.savedAtUTC,priorElapsedMs:saved.elapsedSavedMs,
   note:'Page reload: reaction times spanning reload need separate treatment'});
- render();notice('实验已恢复。请注意页面重新加载可能影响反应时连续性。');
+ render();if(s.pendingSettlementReveal&&!s.pendingFeedback)void revealSettlement();
+ notice('实验已恢复。请注意页面重新加载可能影响反应时连续性。');
 }
 function bind(){
  for(const id of IDs){const e=document.getElementById(id);if(!e)throw Error('Missing UI element #'+id);dom[id]=e;}
@@ -509,7 +544,6 @@ function bind(){
  get('practiceBtn').addEventListener('click',()=>makeSession(true));
  get('applyBtn').addEventListener('click',executePotion);
  get('depositBtn').addEventListener('click',executeDeposit);
- get('endTrialBtn').addEventListener('click',executeEndTrial);
  get('nextBtn').addEventListener('click',proceed);
  get('continueBtn').addEventListener('click',continueAfterFeedback);
  get('actionDialog').addEventListener('cancel',e=>e.preventDefault());
