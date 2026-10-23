@@ -20,7 +20,7 @@ const IDs=['welcome','game','participantId','episodeCount','trialCount','seed',
  'episodeValue','trialValue','totalValue','mode',
  'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
  'transitionPane','nextBtn','completePane','completeSummary',
- 'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','historyPotion','srFeedback',
+ 'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','srFeedback',
  'actionDialog','actionSub','actionDetails','continueBtn'];
 const dom={};
 let s=null, rng=null, perfZero=performance.now(), elapsedBase=0, historyRenderToken='', animationBusy=false;
@@ -76,7 +76,7 @@ function makeSession(practice){
     potionAllocation:'six_adjacent_same_color_pairs_randomized_once_per_session',actionLimit:null,
     allowEndTrial:false,settlementPolicy:'all_stones_signed_sum',autoSettleWhenPotionsExhausted:true,
     perceptualRotation:false,perceptualReflection:true,
-    historyScope:'last_potion_in_episode',feedbackAfterPotion:true,
+    historyScope:'current_trial',feedbackAfterPotion:true,
     episodeChemistryPolicy:'unique_full_session_and_all_three_components_change_between_adjacent_episodes',
     effectAnimation:true,depositScorePopup:true};
  }catch(error){window.alert(error.message);return;}
@@ -96,7 +96,7 @@ function makeSession(practice){
   stones:[],potions:[],selectedStone:null,selectedPotion:null,
   actionsThisTrial:0,trialScore:0,episodeScore:0,totalScore:0,
   trialStartedElapsedMs:null,trialStartedUTC:null,episodeStartedElapsedMs:null,
-  currentTrialInitial:null,episodeHistory:[],pendingFeedback:null,pendingSettlementReveal:null,
+  currentTrialInitial:null,trialHistory:[],pendingFeedback:null,pendingSettlementReveal:null,
   trials:[],episodes:[],events:[],chemistryKeys:[],storageWarningShown:false,elapsedSavedMs:0};
  perfZero=performance.now();elapsedBase=0;historyRenderToken='';animationBusy=false;
  record('session_start',{config:copy(config),seed,potionLayout:copy(s.potionLayout)});
@@ -117,7 +117,7 @@ function beginEpisode(){
   throw Error('Experiment integrity violation: repeating Episode rules');
  }
  // Only after successful validation can the session state advance.
- s.episodeIndex++;s.trialIndex=-1;s.episodeScore=0;s.episodeHistory=[];s.pendingFeedback=null;
+ s.episodeIndex++;s.trialIndex=-1;s.episodeScore=0;s.trialHistory=[];s.pendingFeedback=null;
  s.chemistry=next;s.chemistryKeys.push(signature);
  s.episodeStartedElapsedMs=elapsedMs();
  historyRenderToken='';
@@ -127,6 +127,7 @@ function beginEpisode(){
 }
 function beginTrial(){
  s.trialIndex++;
+ s.trialHistory=[];historyRenderToken='';
  const items=Core.sampleTrialItems(rng,3,12,s.potionLayout);
  s.stones=items.stones;s.potions=items.potions;
  s.selectedStone=null;s.selectedPotion=null;s.actionsThisTrial=0;s.trialScore=0;
@@ -168,7 +169,7 @@ function executePotion(){
   before:{visible:copy(before.visible),reward:before.reward},
   after:{visible:copy(after.visible),reward:after.reward},
   changed:result.changed,localTime:localIso(),elapsedMs:elapsedMs()};
- s.episodeHistory=[row];
+ s.trialHistory.push(row);
  s.pendingFeedback=copy(row);
  record('apply_potion',{stoneId:st.id,potionId:p.id,color:p.color,
   latentBefore:before.hidden,latentAfter:after.hidden,
@@ -383,22 +384,35 @@ function feedbackMarkup(row){
 }
 function historyMarkup(row){
  return `<div class="history-card-body">
+    <div class="history-action"><strong>第 ${row.actionNumber} 次</strong><span>原石 ${escapeHtml(row.stoneId.slice(1))}</span></div>
+    <div class="history-potion"><span class="history-potion-label">药水</span>${potionArt(row.color,'history-potion-img')}<span class="history-potion-color">${POTIONS[row.color][0]}</span></div>
     ${stateComparisonCard('用药前',row.before)}
     <span class="history-arrow" aria-hidden="true">→</span>
     ${stateComparisonCard('用药后',row.after)}
   </div>`;
 }
 function renderHistory(){
- const row=s.episodeHistory.at(-1);
- const token=`${s.episodeIndex}:${s.trialIndex}:${row?.trial}:${row?.actionNumber}:${row?.elapsedMs}`;
- get('historyCount').textContent=row?`Trial ${row.trial}\n原石 ${row.stoneId.slice(1)}\n第 ${row.actionNumber} 次`:'等待首次用药';
+ const rows=s.trialHistory;
+ const token=`${s.episodeIndex}:${s.trialIndex}:${rows.length}`;
+ get('historyCount').textContent=`Trial ${s.trialIndex+1} · ${rows.length} 次用药`;
  if(historyRenderToken===token)return;
  historyRenderToken=token;
- get('historyPotion').innerHTML=row?`<div class="history-potion"><span class="history-potion-label">药水</span>${potionArt(row.color,'history-potion-img')}<span class="history-potion-color">${POTIONS[row.color][0]}</span></div>`:'';
  const root=get('history');root.replaceChildren();
- if(!row){const empty=document.createElement('div');empty.className='history-empty';empty.textContent='使用药水后，这里显示最近一次用药的前后变化。';root.appendChild(empty);return;}
- const card=document.createElement('article');card.className='history-card';
- card.innerHTML=historyMarkup(row);root.appendChild(card);
+ if(!rows.length){const empty=document.createElement('div');empty.className='history-empty';empty.textContent='本 Trial 暂无用药记录。用药后会保留本轮全部记录，最近一次在上方。';root.appendChild(empty);return;}
+ for(const row of [...rows].reverse()){
+  const card=document.createElement('article');card.className='history-card';
+  card.innerHTML=historyMarkup(row);root.appendChild(card);
+ }
+ root.scrollTop=0;
+}
+function restoreTrialHistory(saved){
+ // Full events survive the old latest-only display, so reconstruct the entire
+ // current Trial without importing any earlier Trial or Episode records.
+ const rows=saved.events.filter(e=>e.type==='apply_potion'&&e.episode===saved.episodeIndex+1&&e.trial===saved.trialIndex+1)
+  .map(e=>({episode:e.episode,trial:e.trial,actionNumber:e.actionNumber,stoneId:e.stoneId,potionId:e.potionId,color:e.color,
+   before:{visible:copy(e.visibleBefore),reward:e.rewardBefore},after:{visible:copy(e.visibleAfter),reward:e.rewardAfter},
+   changed:e.changed,localTime:e.localTime,elapsedMs:e.elapsedMs}));
+ return rows;
 }
 function showFeedbackIfNeeded(){
  if(!s||!s.pendingFeedback)return;
@@ -466,14 +480,14 @@ function payload(){
   actionsPolicy:'apply potion or settle ALL three stones immediately; signed sum includes -3 and -1; exhausting all potions auto-settles; no separate End Trial button',
   animationPolicy:'~1s potion flight; simultaneous three-stone flight followed by ~1.5s combined signed total; reduced motion keeps a static total overlay',
   eventLog:'internalReason and latent states appear ONLY in exported researcher data',
-  historyScope:'UI shows only the latest potion application within the current Episode; complete actions remain in exported events',
+  historyScope:'UI shows all potion applications in the current Trial only, newest first; entering the next Trial clears the view; complete actions remain in exported events',
   chemistryNonrepeatPolicy:'every full Chemistry unique throughout a session; graph, potion mapping, and reflection all change versus previous Episode',
   episodeChemistryFingerprints:copy(s.chemistryKeys)},
   episodes:copy(s.episodes),trials:copy(s.trials),events:copy(s.events),
   currentProgress:{episode:s.episodeIndex+1,trial:s.trialIndex+1,phase:s.phase,
    actionsThisTrial:s.actionsThisTrial,trialScore:s.trialScore,
    chemistry:copy(s.chemistry),stones:copy(s.stones),potions:copy(s.potions),
-   episodeHistory:copy(s.episodeHistory),pendingFeedback:copy(s.pendingFeedback)}};
+   trialHistory:copy(s.trialHistory),pendingFeedback:copy(s.pendingFeedback)}};
 }
 function downloadFile(name,mime,data){
  const url=URL.createObjectURL(new Blob([data],{type:mime}));
@@ -520,8 +534,9 @@ function restore(){
    '检测到 v6.5 实验备份。是否恢复目前的进度和操作记录？';
  if(!window.confirm(message))return;
  s=saved;rng=Core.makeRng(s.seed);rng.restore(saved.rngState>>>0);
- s.episodeHistory=(s.episodeHistory||[]).slice(-1);
- s.config.historyScope='last_potion_in_episode';
+ s.trialHistory=restoreTrialHistory(saved);
+ delete s.episodeHistory;
+ s.config.historyScope='current_trial';
  elapsedBase=Math.max(Number(saved.elapsedSavedMs)||0,Date.now()-Date.parse(s.startedAtUTC));
  perfZero=performance.now();historyRenderToken='';animationBusy=false;
  if(s.phase==='playing'&&s.pendingSettlementReveal&&s.stones.every(x=>x.submitted))finishTrial(s.pendingSettlementReveal.reason);

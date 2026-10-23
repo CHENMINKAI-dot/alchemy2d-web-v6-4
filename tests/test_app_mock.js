@@ -64,17 +64,17 @@ async function flush(){for(let i=0;i<8;i++) await Promise.resolve();}
  assert.equal(reload.state().trials.length,1,'Reload during reveal never settles again');
  assert.equal(reload.state().totalScore,expected);
  await flush();a.click('nextBtn');
- assert.equal(a.state().trialIndex,1);assert.equal(a.state().episodeHistory.length,1);
+ assert.equal(a.state().trialIndex,1);assert.equal(a.state().trialHistory.length,0,'Entering next Trial clears visible history');
  assert.deepEqual(a.state().potions.map(p=>p.color),fixed);
  a.els.stonesList.children[0].click();
  for(let k=0;k<12;k++){
   a.els.potionsList.children[k].click();a.click('applyBtn');await flush();
-  assert.equal(a.state().episodeHistory.length,1,'Visible history retains exactly the latest application');
-  assert.equal(a.state().episodeHistory[0].potionId,`P${k+1}`);
-  assert.equal(a.els.history.children.length,1);
-  assert.equal(a.els.historyCount.textContent.split('\n').length,3,'Trial, stone, and action use separate lines');
-  assert.match(a.els.historyPotion.innerHTML,/<span class="history-potion-color">(红色|橙色|黄色|绿色|青绿色|粉色)<\/span>/,'History label contains only its color');
-  assert(a.els.historyCount.textContent.includes(`第 ${k+1} 次`),'Latest card updates on every action');
+  assert.equal(a.state().trialHistory.length,k+1,'All applications in this Trial are retained');
+  assert.equal(a.state().trialHistory[k].potionId,`P${k+1}`);
+  assert.equal(a.els.history.children.length,k+1);
+  assert.match(a.els.history.children[0].innerHTML,/<span class="history-potion-color">(红色|橙色|黄色|绿色|青绿色|粉色)<\/span>/,'History color label has no suffix');
+  assert(a.els.history.children[0].innerHTML.includes(`第 ${k+1} 次`),'Most recent application appears first');
+  assert(a.els.historyCount.textContent.includes(`${k+1} 次用药`));
   assert.equal(a.els.actionDialog.open,true);
   if(k<11)assert.equal(a.state().phase,'playing');
   else{
@@ -86,10 +86,15 @@ async function flush(){for(let i=0;i<8;i++) await Promise.resolve();}
   }
   a.click('continueBtn');await flush();
  }
- s=a.state();assert.equal(s.actionsThisTrial,12);assert.equal(s.potions.filter(p=>p.used).length,12);
+ s=a.state();assert.equal(s.trialHistory.length,12);assert(s.trialHistory.every(x=>x.trial===2&&x.episode===1));assert.equal(s.actionsThisTrial,12);assert.equal(s.potions.filter(p=>p.used).length,12);
  assert.equal(s.phase,'between');assert.equal(s.pendingSettlementReveal,null);
+ // Migrate a latest-only old backup by rebuilding from full current-Trial events.
+ const legacy=JSON.parse(JSON.stringify(s));legacy.episodeHistory=[legacy.trialHistory.at(-1)];delete legacy.trialHistory;legacy.config.historyScope='last_potion_in_episode';
+ a.store.set('alchemy_human_experiment_v6_5_signed_batch_session',JSON.stringify(legacy));
+ a=make(a.store);assert.equal(a.state().trialHistory.length,12,'Legacy reload reconstructs all records in the current Trial');
+ assert.equal(a.state().episodeHistory,undefined);assert.equal(a.state().config.historyScope,'current_trial');
  a.click('nextBtn');s=a.state();
- assert.equal(s.episodeIndex,1);assert.equal(s.episodeHistory.length,0);
+ assert.equal(s.episodeIndex,1);assert.equal(s.trialHistory.length,0);
  assert.deepEqual(Core.chemistryChangeFlags(s.chemistry,s.episodes[0].chemistry),{graphChanged:true,potionMappingChanged:true,reflectionChanged:true});
  for(let i=0;i<2;i++){a.click('depositBtn');await flush();a.click('nextBtn');}
  s=a.state();assert.equal(s.phase,'completed');
@@ -101,6 +106,8 @@ async function flush(){for(let i=0;i<8;i++) await Promise.resolve();}
  a.click('finishExportBtn');a.click('finishCsvBtn');assert.equal(a.downloads.length,2);
  const exported=JSON.parse(await a.downloads[0].text());
  assert.equal(exported.metadata.version,'6.5.0-signed-batch');
+ assert.equal(exported.metadata.config.historyScope,'current_trial');
+ assert.equal(exported.currentProgress.trialHistory.length,0);
  assert.equal(exported.events.filter(e=>e.type==='deposit_all_stones').length,4);
  assert.equal(exported.events.filter(e=>e.type==='deposit_stone'||e.type==='end_trial_action').length,0);
  assert.equal(exported.events.filter(e=>e.type==='apply_potion').length,13);
