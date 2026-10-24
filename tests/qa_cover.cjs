@@ -69,10 +69,10 @@ const URL=process.argv[2]||'http://127.0.0.1:8780/';const live=URL.includes('git
  await finish(200);s=await page.evaluate(()=>AlchemySessionStore.load());assert.equal(s.phase,'completed');assert.equal(s.trials.length,200);assert.equal(s.episodes.length,20);
  const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#finishExportBtn').click()]);
  const jsonPath=path.join(__dirname,prefix+'-export.json');await download.saveAs(jsonPath);
- const exported=JSON.parse(fs.readFileSync(jsonPath,'utf8'));assert.equal(exported.trials.length,200);assert.equal(exported.metadata.fixedEvaluationSchedule.scheduleId,'eval20-seed0-9e42a1c20a1cbeef');
+ const exported=JSON.parse(fs.readFileSync(jsonPath,'utf8'));assert.equal(exported.trials.length,200);assert.equal(exported.metadata.fixedEvaluationSchedule.scheduleId,'eval20-oracle-balanced-seed0-2d7620305076e66b');
  assert.equal(errors.length,0,errors.join(';'));assert.equal(nativeDialogs.length,0,JSON.stringify(nativeDialogs));assert.equal(failed.length,0,JSON.stringify(failed));
  const report={url:URL,coverOnlyTwoButtons:true,existingAtlasPanelsAndButtons:true,practiceWithoutId:true,formalIdValidationAndEnter:true,
   rulesModal:true,customRestoreAndReturnDialogs:true,noNativeAppDialogs:true,loadingPanel:true,layouts,formal200TrialCompletionAndExport:true,
-  unchangedSchedule:'eval20-seed0-9e42a1c20a1cbeef',pageErrors:errors,failedRequests:failed};
+  unchangedSchedule:'eval20-oracle-balanced-seed0-2d7620305076e66b',pageErrors:errors,failedRequests:failed};
  fs.writeFileSync(path.join(__dirname,prefix+'-qa.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

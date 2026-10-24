@@ -1,7 +1,7 @@
 /* IndexedDB incremental journal for 200-Trial sessions. No remote writes. */
 (()=>{
  'use strict';
- const NAME='alchemy_human_experiment_v6_6_fixed_eval20';
+ const NAME='alchemy_human_experiment_v6_6_fixed_eval20_'+window.AlchemyEvaluationSchedule.scheduleId;
  let chain=Promise.resolve(),queued={sessionId:null,events:0,trials:0,episodes:0};
  const ready=new Promise((resolve,reject)=>{
   const request=indexedDB.open(NAME,1);

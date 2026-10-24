@@ -6,7 +6,7 @@ if(!Core) throw Error('alchemy_core.js 未正确载入');
 const Protocol=window.AlchemyFixedProtocol;
 if(!Protocol)throw Error('固定验证场景未正确载入');
 const VERSION='6.6.0-fixed-eval20';
-const LEGACY_STORAGE_KEY='alchemy_human_experiment_v6_6_fixed_eval20_session';
+const LEGACY_STORAGE_KEY='alchemy_human_experiment_v6_6_fixed_eval20_session_'+Protocol.schedule.scheduleId;
 const SessionStore=window.AlchemySessionStore;
 if(!SessionStore)throw Error('实验数据备份模块未正确载入');
 const POTIONS={
