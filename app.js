@@ -20,12 +20,14 @@ const SIZES={'-1':['小型','small'],'0':['中型','medium'],'1':['大型','larg
 const VALUE_NAMES=['最低','次低','次高','最高'];
 const VALUE_CLASSES=['value-low','value-midlow','value-midhigh','value-high'];
 const IDs=['welcome','game','participantId',
- 'startBtn','practiceBtn',
+ 'startBtn','practiceBtn','launchBtn','aboutBtn','modeDialog','formalModeBtn','modeCloseBtn',
+ 'participantDialog','participantForm','participantBackBtn','participantError','rulesDialog','rulesCloseBtn',
  'episodeValue','trialValue','totalValue','mode',
  'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
  'transitionPane','nextBtn','completePane','completeSummary',
  'finishExportBtn','finishCsvBtn','newSessionBtn','history','historyCount','historyToggle','srFeedback',
  'actionDialog','actionSub','actionDetails','continueBtn'];
+const Interface=window.AlchemyInterface;
 const dom={};
 let s=null, rng=null, perfZero=performance.now(), elapsedBase=0, historyRenderToken='', animationBusy=false;
 function get(id){return dom[id];}
@@ -48,7 +50,7 @@ function backupFailure(error){
  console.warn('Alchemy local backup failed',error);
  if(s&&!s.storageWarningShown){
   s.storageWarningShown=true;
-  window.alert('浏览器无法保存自动备份。请保持当前页面打开，完成实验后立即下载数据。');
+  void Interface.tell('浏览器无法保存自动备份。请保持当前页面打开，完成实验后立即下载数据。',{title:'数据备份提示'});
  }
 }
 function writeSave(){
@@ -66,7 +68,7 @@ function record(type,more={}){
   actionNumber:s.actionsThisTrial,...(!s.practice&&s.episodeIndex>=0?Protocol.provenance(s.episodeIndex):{}),...copy(more)});
  writeSave();
 }
-function makeSession(practice){
+async function makeSession(practice){
  let config;
  try{config={episodes:practice?1:20,
     trialsPerEpisode:practice?2:10,
@@ -79,12 +81,14 @@ function makeSession(practice){
     selectionSeed:0,scheduleId:practice?null:Protocol.schedule.scheduleId,
     sourceDatasetSha256:practice?null:Protocol.schedule.sourceDatasetSha256,
     effectAnimation:true,depositScorePopup:true};
- }catch(error){window.alert(error.message);return;}
+ }catch(error){await Interface.tell(error.message);return;}
  const seed=0;
  Protocol.validate();
- const participantId=get('participantId').value.trim();
- if(!participantId){window.alert('请填写被试编号。');return;}
- if(s && s.phase!=='completed'&&!window.confirm('开始新实验将覆盖当前 v6.6 会话的自动备份。确定继续吗？'))return;
+ const participantId=practice?'PRACTICE':get('participantId').value.trim();
+ if(!participantId){get('participantError').textContent='请填写被试编号';get('participantId').focus();return;}
+ if(s && s.phase!=='completed'&&!await Interface.ask('开始新实验将覆盖当前会话的自动备份。是否继续？',{title:'开始新实验'}))return;
+ get('modeDialog').open&&get('modeDialog').close();
+ get('participantDialog').open&&get('participantDialog').close();
  rng=Core.makeRng(seed);
  s={version:VERSION,sessionId:sessionId(),participantId,practice,config,seed,
   potionLayout:Core.makePotionLayout(rng),
@@ -466,6 +470,7 @@ function continueAfterFeedback(){
  if(s.pendingSettlementReveal)void revealSettlement();else render();
 }
 function render(){
+ document.body.dataset.screen=s?'game':'cover';
  if(!s){get('welcome').classList.remove('hidden');get('game').classList.add('hidden');return;}
  get('welcome').classList.add('hidden');get('game').classList.remove('hidden');
  get('game').setAttribute('data-phase',s.phase);
@@ -557,11 +562,12 @@ function downloadCSV(){
  notice('CSV 数据下载已开始');
 }
 async function clearAndSetup(){
- if(s&&!window.confirm('返回设置将清除当前 v6.6 会话的本地恢复备份。请先确认数据已经下载。'))return;
+ if(s&&!await Interface.ask('返回封面将清除当前会话的本地恢复备份。请先确认数据已经下载。',{title:'返回封面',confirmText:'返回封面',cancelText:'保留当前实验'}))return;
  try{await SessionStore.clear();localStorage.removeItem(LEGACY_STORAGE_KEY);}catch(error){backupFailure(error);return;}
  s=null;rng=null;historyRenderToken='';animationBusy=false;
  get('actionDialog').open&&get('actionDialog').close();
- render();get('welcome').scrollIntoView({behavior:'smooth',block:'start'});
+ get('participantId').value='';get('participantError').textContent='';
+ render();window.scrollTo(0,0);
 }
 async function restore(){
  let saved;
@@ -571,11 +577,11 @@ async function restore(){
  if(!saved||saved.version!==VERSION||!Array.isArray(saved.events))return;
  if(!saved.practice&&(saved.seed!==0||saved.config.scheduleId!==Protocol.schedule.scheduleId||
     saved.config.episodes!==20||saved.config.trialsPerEpisode!==10)){
-  window.alert('备份与当前实验场景清单不匹配。原数据已保留，请联系实验员。');return;
+  await Interface.tell('备份与当前实验场景清单不匹配。原数据已保留，请联系实验员。',{title:'数据备份提示'});return;
  }
  const message=saved.phase==='completed'?'检测到已完成的 v6.6 实验。是否恢复，以便导出数据？':
    '检测到 v6.6 实验备份。是否恢复目前的进度和操作记录？';
- if(!window.confirm(message))return;
+ if(!await Interface.ask(message,{title:'继续实验',confirmText:saved.phase==='completed'?'恢复并导出':'恢复进度',cancelText:'暂不恢复'}))return;
  s=saved;rng=Core.makeRng(s.seed);rng.restore(saved.rngState>>>0);
  s.trialHistory=restoreTrialHistory(saved);
  delete s.episodeHistory;
@@ -595,7 +601,13 @@ async function restore(){
 }
 function bind(){
  for(const id of IDs){const e=document.getElementById(id);if(!e)throw Error('Missing UI element #'+id);dom[id]=e;}
- get('startBtn').addEventListener('click',()=>makeSession(false));
+ get('launchBtn').addEventListener('click',()=>get('modeDialog').showModal());
+ get('aboutBtn').addEventListener('click',()=>{get('rulesDialog').showModal();get('rulesDialog').scrollTop=0;});
+ get('modeCloseBtn').addEventListener('click',()=>get('modeDialog').close());
+ get('formalModeBtn').addEventListener('click',()=>{get('modeDialog').close();get('participantError').textContent='';get('participantDialog').showModal();get('participantId').focus();});
+ get('participantBackBtn').addEventListener('click',()=>{get('participantDialog').close();get('modeDialog').showModal();});
+ get('rulesCloseBtn').addEventListener('click',()=>get('rulesDialog').close());
+ get('participantForm').addEventListener('submit',event=>{event.preventDefault();void makeSession(false);});
  get('practiceBtn').addEventListener('click',()=>makeSession(true));
  get('historyToggle').addEventListener('click',toggleHistory);
  get('applyBtn').addEventListener('click',executePotion);

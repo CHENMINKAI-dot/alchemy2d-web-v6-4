@@ -5,15 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>ALCHEMY · 2D 炼金实验 v6.6</title>
-<link rel="preload" href="assets/fonts/alchemy-serif-ui.woff2?v=20261024-fixed-eval20" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261024-fixed-eval20">
-<link rel="stylesheet" href="theme_v6_1.css?v=20261024-fixed-eval20">
-<link rel="stylesheet" href="theme_v6_3.css?v=20261024-fixed-eval20">
+<link rel="preload" href="assets/fonts/alchemy-serif-ui.woff2?v=20261024-cover" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css?v=20261024-cover">
+<link rel="stylesheet" href="theme_v6_1.css?v=20261024-cover">
+<link rel="stylesheet" href="theme_v6_3.css?v=20261024-cover">
+<link rel="stylesheet" href="cover_ui.css?v=20261024-cover">
+<link rel="preload" as="image" href="assets/alchemy_cover.png">
 </head>
-<body>
+<body data-screen="cover">
 <section id="resourceLoader" class="resource-loader" aria-labelledby="resourceLoaderTitle">
   <div class="resource-loader-card">
-    <span class="resource-loader-mark" aria-hidden="true">✦</span>
     <h1 id="resourceLoaderTitle">正在准备炼金实验</h1>
     <p id="resourceLoaderStatus" role="status" aria-live="polite">正在加载实验资源…</p>
     <div id="resourceProgress" class="resource-progress" role="progressbar" aria-label="实验资源加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
@@ -29,43 +30,12 @@
   </header>
 
   <main>
-    <section id="welcome" class="welcome card">
-      <div class="welcome-copy">
-        <span class="eyebrow">THE ALCHEMY TASK</span>
-        <h1>探索炼金规律</h1>
-        <p>观察石头、尝试药水，并利用学到的规律获得更高积分。</p>
-        <div class="welcome-images">
-          <img src="assets/potion_pink.png" alt="粉色魔法药水">
-          <img class="center-art" src="assets/cauldron.png" alt="炼金坩埚">
-          <img src="assets/potion_teal.png" alt="青绿色魔法药水">
-        </div>
+    <section id="welcome" class="cover-screen" aria-label="Alchemy 实验封面">
+      <img class="cover-art" src="assets/alchemy_cover.png" alt="" fetchpriority="high" decoding="async">
+      <div class="cover-actions">
+        <button id="launchBtn" class="button gold" type="button">开始实验</button>
+        <button id="aboutBtn" class="button primary" type="button">关于实验</button>
       </div>
-      <div class="setup">
-        <h2>开始实验</h2>
-        <label class="field"><span>被试编号</span><input id="participantId" maxlength="40" autocomplete="off" placeholder="例如 P001"></label>
-        <div class="fixed-session-summary" aria-label="固定实验安排"><span><strong>20</strong> 个 Episode</span><span><strong>10</strong> 个 Trial / Episode</span></div>
-        <p class="setup-note">共 200 个 Trial。请先阅读下方任务说明；每个 Episode 内的规则固定，下一 Episode 会切换规则。</p>
-        <div class="setup-actions">
-          <button id="startBtn" class="button primary" type="button">开始正式实验</button>
-          <button id="practiceBtn" class="button ghost" type="button">练习 2 个 Trial</button>
-        </div>
-        <p class="setup-note">每个 Trial：3 块石头、六种药水各 2 瓶。数据仅保存在本机，完成后请导出。</p>
-      </div>
-      <section class="welcome-rules" aria-labelledby="welcomeRulesTitle">
-        <h2 id="welcomeRulesTitle">任务说明</h2>
-  <p>每个 Episode 使用一套固定的隐藏规则。进入下个 Episode 时，隐藏规则会切换。</p>
-  <ol>
-    <li>每个 Trial 有 3 块石头和 12 瓶药水，六种颜色各 2 瓶。每种颜色的两瓶药水相邻摆放为一组。六组药水在实验开始时随机排序，摆成四列三行。此后所有 Trial 的位置保持不变，消耗后仅原位置变暗。</li>
-    <li>选择一块石头和一瓶药水，再点击「使用药水」。每次用药后会出现前后对比，点击「继续」方可操作。</li>
-    <li>每块石头左侧的价值温度计对应分数固定：<strong>蓝色 1 格 = −3 分，浅蓝色 2 格 = −1 分，浅橙色 3 格 = +1 分，橙色 4 格 = +15 分</strong>。这里指温度计的颜色；药水颜色表示不同作用，不代表分数。</li>
-    <li>药水使用后会被消耗。如果石头没有变化，并不代表可以判断具体原因。</li>
-    <li>点击「全部投入并结算」会同时将三块石头投入坩埚，立即按三块石头的当前分数求和，并显示合计数字。<strong>负分石头也必须计入，例如 +1 −3 −3 = −5 分</strong>；无需先选择石头。</li>
-    <li>点击下方「历史记录」横条可展开本 Trial 的全部用药记录，最近一次在上方；每次用药后自动收起。记录较多时可向下滚动页面查看。结算后仍可回看，进入下一 Trial 后清空。导出的实验数据仍保留全部操作日志。</li>
-    <li>每轮可使用全部 12 瓶药水，耗尽时自动结算三块石头的总分。最后一次用药的前后反馈仍会显示，点击「继续」后自动展示合计分数。也可以在药水耗尽前随时点击「全部投入并结算」，立即结束本轮；没有单独的结束按钮。</li>
-    <li>完成整个实验后，请立即下载数据文件。</li>
-  </ol>
-  <p class="help-footnote">本程序是基于 Alchemy 核心规则改编的二维人类实验，不是 DeepMind 官方程序。为降低任务负荷，程序去除了旋转，保留逐 Episode 的外观反射。实验共 20 个 Episode，每个 Episode 有 10 个 Trial。实验数据只保存在此浏览器中。</p>
-      </section>
     </section>
 
     <section id="game" class="game hidden">
@@ -114,6 +84,51 @@
   </main>
 </div>
 
+
+<dialog id="modeDialog" class="intro-dialog" aria-labelledby="modeTitle">
+  <h2 id="modeTitle">选择模式</h2>
+  <div class="mode-actions">
+    <button id="practiceBtn" class="button primary" type="button">练习模式</button>
+    <button id="formalModeBtn" class="button gold" type="button">实验模式</button>
+  </div>
+  <button id="modeCloseBtn" class="button secondary dialog-back" type="button">返回</button>
+</dialog>
+<dialog id="participantDialog" class="intro-dialog" aria-labelledby="participantTitle">
+  <h2 id="participantTitle">被试编号</h2>
+  <form id="participantForm" novalidate>
+    <label class="field"><span class="sr-only">被试编号</span><input id="participantId" maxlength="40" autocomplete="off" placeholder="请输入被试编号" aria-describedby="participantError"></label>
+    <p id="participantError" class="participant-error" role="status" aria-live="polite"></p>
+    <button id="startBtn" class="button gold participant-submit" type="submit">开始实验</button>
+  </form>
+  <button id="participantBackBtn" class="button secondary dialog-back" type="button">返回</button>
+</dialog>
+<dialog id="rulesDialog" class="intro-dialog rules-dialog" aria-labelledby="rulesTitle">
+  <h2 id="rulesTitle">游戏规则</h2>
+  <div class="rules-content">
+  <p>每个 Episode 使用一套固定的隐藏规则。进入下个 Episode 时，隐藏规则会切换。</p>
+  <ol>
+    <li>每个 Trial 有 3 块石头和 12 瓶药水，六种颜色各 2 瓶。每种颜色的两瓶药水相邻摆放为一组。六组药水在实验开始时随机排序，摆成四列三行。此后所有 Trial 的位置保持不变，消耗后仅原位置变暗。</li>
+    <li>选择一块石头和一瓶药水，再点击「使用药水」。每次用药后会出现前后对比，点击「继续」方可操作。</li>
+    <li>每块石头左侧的价值温度计对应分数固定：<strong>蓝色 1 格 = −3 分，浅蓝色 2 格 = −1 分，浅橙色 3 格 = +1 分，橙色 4 格 = +15 分</strong>。这里指温度计的颜色；药水颜色表示不同作用，不代表分数。</li>
+    <li>药水使用后会被消耗。如果石头没有变化，并不代表可以判断具体原因。</li>
+    <li>点击「全部投入并结算」会同时将三块石头投入坩埚，立即按三块石头的当前分数求和，并显示合计数字。<strong>负分石头也必须计入，例如 +1 −3 −3 = −5 分</strong>；无需先选择石头。</li>
+    <li>点击下方「历史记录」横条可展开本 Trial 的全部用药记录，最近一次在上方；每次用药后自动收起。记录较多时可向下滚动页面查看。结算后仍可回看，进入下一 Trial 后清空。导出的实验数据仍保留全部操作日志。</li>
+    <li>每轮可使用全部 12 瓶药水，耗尽时自动结算三块石头的总分。最后一次用药的前后反馈仍会显示，点击「继续」后自动展示合计分数。也可以在药水耗尽前随时点击「全部投入并结算」，立即结束本轮；没有单独的结束按钮。</li>
+    <li>完成整个实验后，请立即下载数据文件。</li>
+  </ol>
+  <p class="help-footnote">本程序是基于 Alchemy 核心规则改编的二维人类实验，不是 DeepMind 官方程序。为降低任务负荷，程序去除了旋转，保留逐 Episode 的外观反射。实验共 20 个 Episode，每个 Episode 有 10 个 Trial。实验数据只保存在此浏览器中。</p>
+  </div>
+  <button id="rulesCloseBtn" class="button secondary dialog-back" type="button">返回</button>
+</dialog>
+<dialog id="noticeDialog" class="intro-dialog notice-dialog" aria-labelledby="noticeTitle" aria-describedby="noticeMessage">
+  <h2 id="noticeTitle">实验提示</h2>
+  <p id="noticeMessage" class="notice-message"></p>
+  <div class="notice-actions">
+    <button id="noticeCancelBtn" class="button secondary" type="button">返回</button>
+    <button id="noticeConfirmBtn" class="button gold" type="button">继续</button>
+  </div>
+</dialog>
+
 <dialog id="actionDialog" class="action-dialog" aria-labelledby="actionTitle" aria-modal="true">
   <div class="action-dialog-head">
     <h2 id="actionTitle">用药结果</h2>
@@ -125,14 +140,18 @@
 
 
 <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
-<script src="alchemy_core.js?v=20261024-fixed-eval20"></script>
-<script src="evaluation_schedule.js?v=20261024-fixed-eval20"></script>
-<script src="fixed_protocol.js?v=20261024-fixed-eval20"></script>
-<script src="session_store.js?v=20261024-fixed-eval20"></script>
-<script src="app.js?v=20261024-fixed-eval20"></script>
+<script src="alchemy_core.js?v=20261024-cover"></script>
+<script src="evaluation_schedule.js?v=20261024-cover"></script>
+<script src="fixed_protocol.js?v=20261024-cover"></script>
+<script src="session_store.js?v=20261024-cover"></script>
+<script src="interface_dialog.js?v=20261024-cover"></script>
+<script src="app.js?v=20261024-cover"></script>
 <script>
 (() => {
+  let resourcesResolve;
+  window.alchemyResourcesReady=new Promise(resolve=>{resourcesResolve=resolve;});
   const assets = [
+    'assets/alchemy_cover.png',
     'assets/ui/source_art/gothic_numeral_atlas.png',
     'assets/cauldron.png',
     'assets/potion_green.png', 'assets/potion_orange.png', 'assets/potion_pink.png',
@@ -251,6 +270,7 @@
     }
 
     status.textContent = '资源已全部加载，正在进入实验…';
+    resourcesResolve();
     window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 450);
   }
 

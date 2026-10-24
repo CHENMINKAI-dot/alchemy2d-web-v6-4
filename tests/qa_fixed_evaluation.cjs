@@ -15,16 +15,15 @@ const live=URL.includes('github.io');
  page.on('response',r=>{if(r.status()>=400&&!r.url().endsWith('/favicon.ico'))failed.push([r.status(),r.url()]);});
  await page.goto(URL);await page.locator('#resourceLoader').waitFor({state:'hidden',timeout:60000});
  assert.equal(await page.locator('#episodeCount,#trialCount,#seed,#helpBtn,#helpDialog').count(),0);
- assert.equal(await page.locator('#welcomeRulesTitle').innerText(),'任务说明');
- assert.equal(await page.locator('.welcome-rules li').count(),8);
+ await page.locator('#aboutBtn').click();assert.equal(await page.locator('#rulesDialog li').count(),8);await page.locator('#rulesCloseBtn').click();
  const welcome=[];
  for(const viewport of [{width:1366,height:768},{width:1920,height:1080}]){
   await page.setViewportSize(viewport);await page.screenshot({path:path.join(WORK,`fixed-eval-${live?'live':'local'}-welcome-${viewport.width}.png`),fullPage:true});
-  const d=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,rulesVisible:!document.querySelector('.welcome-rules').closest('.hidden')}));
+  const d=await page.evaluate(()=>({width:innerWidth,scrollWidth:document.documentElement.scrollWidth,coverVisible:document.body.dataset.screen==='cover'}));
   assert(d.scrollWidth<=d.width);welcome.push(d);
  }
  await page.setViewportSize({width:1366,height:768});
- await page.locator('#participantId').fill('QA_FIXED_20');await page.locator('#startBtn').click();
+ await page.locator('#launchBtn').click();await page.locator('#formalModeBtn').click();await page.locator('#participantId').fill('QA_FIXED_20');await page.locator('#startBtn').click();
  await page.locator('#resourceLoader').waitFor({state:'hidden'});
  const state=()=>page.evaluate(()=>window.AlchemySessionStore.load());
  let s=await state();assert.equal(s.seed,0);assert.equal(s.config.episodes,20);assert.equal(s.config.trialsPerEpisode,10);
@@ -45,7 +44,7 @@ const live=URL.includes('github.io');
  await page.locator('.history-panel').screenshot({path:path.join(WORK,`fixed-eval-${live?'live':'local'}-history.png`)});
  await page.locator('#nextBtn').click();
  s=await state();const secondInitial=s.currentTrialInitial;
- await page.reload();await page.locator('#resourceLoader').waitFor({state:'hidden'});await page.locator('#game').waitFor({state:'visible'});
+ await page.reload();await page.locator('#resourceLoader').waitFor({state:'hidden'});await page.locator('#noticeConfirmBtn').click();await page.locator('#game').waitFor({state:'visible'});
  s=await state();assert.deepEqual(s.currentTrialInitial,secondInitial);assert.equal(s.trialIndex,1);assert.equal(s.events.filter(e=>e.type==='session_restored').length,1);
  // Complete all remaining trials through real DOM controls and production handlers.
  await page.evaluate(async()=>{
@@ -78,7 +77,7 @@ const live=URL.includes('github.io');
  assert.equal(s.totalScore,s.trials.reduce((sum,t)=>sum+t.score,0));
  assert.equal(s.events.filter(e=>e.type==='apply_potion').length,2400);
  const serializedBackupBytes=Buffer.byteLength(JSON.stringify(s),'utf16le');assert(serializedBackupBytes>5*1024*1024);
- await page.reload();await page.locator('#resourceLoader').waitFor({state:'hidden'});await page.locator('#game').waitFor({state:'visible'});
+ await page.reload();await page.locator('#resourceLoader').waitFor({state:'hidden'});await page.locator('#noticeConfirmBtn').click();await page.locator('#game').waitFor({state:'visible'});
  s=await state();assert.equal(s.trials.length,200);assert.equal(s.events.filter(e=>e.type==='apply_potion').length,2400);
  const [jsonDownload]=await Promise.all([page.waitForEvent('download'),page.locator('#finishExportBtn').click()]);
  const jsonPath=path.join(WORK,`fixed-eval-${live?'live':'local'}-export.json`);await jsonDownload.saveAs(jsonPath);
@@ -91,12 +90,12 @@ const live=URL.includes('github.io');
  const csv=fs.readFileSync(csvPath,'utf8');assert(csv.startsWith('\ufeffseq,'));
  for(const key of ['sourceChemistryId','evaluationEpisodeSeed','numPreconditions','scheduleId','historyClickedBeforeAction'])assert(csv.split('\n')[0].includes(key));
  // Practice stays 1x2 and cannot consume/change the formal schedule.
- await page.locator('#newSessionBtn').click();await page.locator('#participantId').fill('QA_PRACTICE');await page.locator('#practiceBtn').click();
+ await page.locator('#newSessionBtn').click();await page.locator('#noticeConfirmBtn').click();await page.locator('#launchBtn').click();await page.locator('#practiceBtn').click();
  await page.locator('#resourceLoader').waitFor({state:'hidden'});s=await state();assert.equal(s.config.episodes,1);assert.equal(s.config.trialsPerEpisode,2);assert.equal(s.config.scheduleId,null);
  await page.evaluate(async()=>{for(let i=0;i<2;i++){
   document.querySelector('#depositBtn').click();while(document.querySelector('#nextBtn').disabled)await new Promise(r=>setTimeout(r,5));document.querySelector('#nextBtn').click();
  }});
- await page.locator('#newSessionBtn').click();await page.locator('#startBtn').click();await page.locator('#resourceLoader').waitFor({state:'hidden'});
+ await page.locator('#newSessionBtn').click();await page.locator('#noticeConfirmBtn').click();await page.locator('#launchBtn').click();await page.locator('#formalModeBtn').click();await page.locator('#participantId').fill('QA_REPEAT');await page.locator('#startBtn').click();await page.locator('#resourceLoader').waitFor({state:'hidden'});
  s=await state();assert.deepEqual(s.currentTrialInitial,firstInitial);
  await page.screenshot({path:path.join(WORK,`fixed-eval-${live?'live':'local'}-game.png`),fullPage:true});
  assert.equal(errors.length,0,errors.join(';'));assert.equal(failed.length,0,JSON.stringify(failed));
