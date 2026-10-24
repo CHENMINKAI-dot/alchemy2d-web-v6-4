@@ -16,10 +16,13 @@
     requireValid(Core&&schedule,'missing protocol resource');
     requireValid(schedule.selectionSeed===0&&schedule.episodesCount===20&&schedule.trialsPerEpisode===10,'configuration');
     requireValid(schedule.sourceDatasetCount===6278&&schedule.episodes.length===20,'dataset size');
+    const tierOrder=[0,1,2,3,1,3,0,2,2,0,3,1,3,2,1,0,1,0,3,2];
+    requireValid(same(schedule.ordering.blocks,['1234','2413','3142','4321','2143']),'block specification');
     const identities=new Set(),behaviors=new Set(),fingerprints=new Set();
     schedule.episodes.forEach((e,i)=>{
       const c=e.chemistry,r=e.source,prior=schedule.episodes[i-1];
-      requireValid(e.episode===i+1&&r.num_preconditions===Math.floor(i/5)&&c.constraintCount===Math.floor(i/5),'tier order');
+      requireValid(e.episode===i+1&&r.num_preconditions===tierOrder[i]&&c.constraintCount===tierOrder[i],'tier order');
+      requireValid(e.block===Math.floor(i/4)+1&&e.positionInBlock===i%4+1&&e.originalEpisode===schedule.ordering.originalEpisodeOrder[i],'block provenance');
       requireValid(!identities.has(r.chemistry_id)&&!behaviors.has(r.behavior_sha256)&&!fingerprints.has(Core.chemistryFingerprint(c)),'duplicate Chemistry');
       identities.add(r.chemistry_id);behaviors.add(r.behavior_sha256);fingerprints.add(Core.chemistryFingerprint(c));
       if(prior){
@@ -59,10 +62,10 @@
             potions:layout.map((color,i)=>({id:`P${i+1}`,color,used:false}))};
   }
   function provenance(index){
-    const r=episode(index).source;
+    const e=episode(index),r=e.source;
     return {scheduleId:schedule.scheduleId,sourceChemistryId:r.chemistry_id,
             evaluationEpisodeSeed:r.evaluation_episode_seed,numPreconditions:r.num_preconditions,
-            sourceBehaviorSha256:r.behavior_sha256};
+            sourceBehaviorSha256:r.behavior_sha256,originalEpisode:e.originalEpisode,block:e.block,positionInBlock:e.positionInBlock};
   }
   return Object.freeze({schedule,validate,episode,trialItems,provenance});
 });

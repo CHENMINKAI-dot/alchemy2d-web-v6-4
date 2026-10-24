@@ -47,3 +47,17 @@ body[data-screen="cover"] .topbar{display:none}
 .resource-loader-meta{font-size:14px;margin-top:14px}.resource-loader-meta strong{font-size:16px}
 @media(max-width:700px){.cover-actions{width:460px;gap:14px;bottom:7vh}.cover-actions .button{padding:12px!important;font-size:19px!important;min-height:58px}.intro-dialog,.rules-dialog{padding:32px 28px!important}.resource-loader-card{padding:34px 30px}}
 @media(max-height:650px){.intro-dialog{padding:30px 36px!important}.intro-dialog h2{margin-bottom:21px!important}.mode-actions{gap:12px}.intro-dialog .dialog-back{margin-top:18px}.cover-actions{bottom:5vh}.cover-actions .button{min-height:52px}}
+
+/* Instructions: fixed frame/header/footer, only the source-document body scrolls. */
+#rulesDialog.rules-dialog{box-sizing:border-box;width:min(960px,calc(100vw - 40px));height:min(820px,calc(100dvh - 40px));max-height:calc(100dvh - 40px);padding:32px 38px!important;overflow:hidden}
+#rulesDialog[open]{display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:16px}
+#rulesDialog .rules-header{min-width:0;padding:0 4px 14px;border-bottom:1px solid #a9864b66}
+#rulesDialog .rules-header h2{margin:0!important;font-size:23px!important}
+#rulesDialog .rules-content{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:2px 20px 12px 8px;font-size:18px;line-height:1.95;color:#ebd9ba;scrollbar-color:#b18a4f #17130f;scrollbar-width:thin}
+#rulesDialog .rules-content:focus-visible{outline:1px solid #b18a4f;outline-offset:3px}
+#rulesDialog .rules-content h3{font-size:20px;line-height:1.6;color:#ffdc9e;margin:24px 0 10px;font-weight:900;letter-spacing:.05em}
+#rulesDialog .rules-content h3:first-child{margin-top:0}
+#rulesDialog .rules-content p{margin:0 0 10px}
+#rulesDialog .rules-footer{display:flex;justify-content:center;padding:14px 0 0;border-top:1px solid #a9864b66}
+#rulesDialog .rules-footer .dialog-back{margin:0;min-width:180px;min-height:52px;font-size:18px!important}
+@media(max-height:600px),(max-width:700px){#rulesDialog.rules-dialog{height:calc(100dvh - 24px);max-height:calc(100dvh - 24px);padding:24px!important}#rulesDialog[open]{gap:10px}#rulesDialog .rules-header{padding-bottom:8px}#rulesDialog .rules-header h2{font-size:20px!important;padding:5px 14px!important}#rulesDialog .rules-content{font-size:16px;padding-right:14px}#rulesDialog .rules-content h3{font-size:18px}#rulesDialog .rules-footer{padding-top:10px}#rulesDialog .rules-footer .dialog-back{min-height:44px}}

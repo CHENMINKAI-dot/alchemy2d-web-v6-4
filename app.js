@@ -5,7 +5,7 @@ const Core=window.AlchemyCore;
 if(!Core) throw Error('alchemy_core.js 未正确载入');
 const Protocol=window.AlchemyFixedProtocol;
 if(!Protocol)throw Error('固定验证场景未正确载入');
-const VERSION='6.6.0-fixed-eval20';
+const VERSION='6.7.0-blocks-guidance';
 const LEGACY_STORAGE_KEY='alchemy_human_experiment_v6_6_fixed_eval20_session_'+Protocol.schedule.scheduleId;
 const SessionStore=window.AlchemySessionStore;
 if(!SessionStore)throw Error('实验数据备份模块未正确载入');
@@ -521,8 +521,8 @@ function payload(){
   chemistryNonrepeatPolicy:'full Chemistry unique; adjacent potion axis permutation, potion reflections and stone reflections each differ; graph may repeat within a tier',
   fixedEvaluationSchedule:s.practice?null:{scheduleId:Protocol.schedule.scheduleId,selectionSeed:0,
    sourceDatasetSha256:Protocol.schedule.sourceDatasetSha256,sourceDatasetCount:6278,
-   trialSeedPolicy:Protocol.schedule.trialSeedPolicy,
-   episodes:Protocol.schedule.episodes.map(e=>({episode:e.episode,source:copy(e.source),initialVisibleStateIds:copy(e.initialVisibleStateIds)}))},
+   trialSeedPolicy:Protocol.schedule.trialSeedPolicy,ordering:copy(Protocol.schedule.ordering),
+   episodes:Protocol.schedule.episodes.map(e=>({episode:e.episode,originalEpisode:e.originalEpisode,block:e.block,positionInBlock:e.positionInBlock,source:copy(e.source),initialVisibleStateIds:copy(e.initialVisibleStateIds)}))},
   episodeChemistryFingerprints:copy(s.chemistryKeys)},
   episodes:copy(s.episodes),trials:copy(s.trials),events:copy(s.events),
   currentProgress:{episode:s.episodeIndex+1,trial:s.trialIndex+1,phase:s.phase,
@@ -552,7 +552,7 @@ function csvField(v){
 function downloadCSV(){
  if(!s||s.phase!=='completed')return;
  const keys=['seq','type','sessionId','participantId','practice','episode','trial','utc','localTime','elapsedMs','trialElapsedMs',
-  'scheduleId','sourceChemistryId','evaluationEpisodeSeed','numPreconditions','sourceBehaviorSha256',
+  'scheduleId','sourceChemistryId','evaluationEpisodeSeed','numPreconditions','sourceBehaviorSha256','originalEpisode','block','positionInBlock',
   'actionNumber','stoneId','potionId','color','changed','internalReason','latentBefore','latentAfter',
   'visibleBefore','visibleAfter','rewardBefore','rewardAfter','reward','feedbackViewingMs',
   'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore','isDecision','historyClickedBeforeAction','historyClickCountBeforeAction','historyOpenCountBeforeAction','historyVisibleBeforeAction','historyEntriesBeforeAction','historyExpanded','historyEntryCount','reason'];
@@ -602,7 +602,7 @@ async function restore(){
 function bind(){
  for(const id of IDs){const e=document.getElementById(id);if(!e)throw Error('Missing UI element #'+id);dom[id]=e;}
  get('launchBtn').addEventListener('click',()=>get('modeDialog').showModal());
- get('aboutBtn').addEventListener('click',()=>{get('rulesDialog').showModal();get('rulesDialog').scrollTop=0;});
+ get('aboutBtn').addEventListener('click',()=>{get('rulesDialog').showModal();document.getElementById('rulesContent').scrollTop=0;});
  get('modeCloseBtn').addEventListener('click',()=>get('modeDialog').close());
  get('formalModeBtn').addEventListener('click',()=>{get('modeDialog').close();get('participantError').textContent='';get('participantDialog').showModal();get('participantId').focus();});
  get('participantBackBtn').addEventListener('click',()=>{get('participantDialog').close();get('modeDialog').showModal();});
