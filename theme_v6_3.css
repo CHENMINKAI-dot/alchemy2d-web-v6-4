@@ -569,3 +569,21 @@ body{font-family:var(--atlas-font);font-weight:650}
  .history-panel .history-card .comparison-state{padding:5px 3px}
 }
 @media(max-width:800px){.history-panel .history-list{grid-template-columns:1fr}}
+
+/* Fixed 20x10 protocol: instructions belong to the start screen. */
+.welcome{min-height:0}
+.welcome-copy{padding:38px 40px 26px}
+.welcome-images{min-height:180px;margin-top:16px}
+.welcome-images img{height:140px}
+.welcome-images .center-art{height:170px}
+.setup{padding:36px 40px 26px}
+.fixed-session-summary{display:flex;flex-wrap:wrap;gap:14px 24px;margin:24px 0 16px;padding:18px 0;border-top:1px solid #8b683b66;border-bottom:1px solid #8b683b66;color:#dfc7a0}
+.fixed-session-summary strong{font-size:28px;color:#f7ce87;margin-right:5px}
+.welcome-rules{grid-column:1/-1;padding:26px 40px 32px;border-top:1px solid #8b683b66;background:linear-gradient(135deg,#211a14aa,#14110fe6);line-height:1.85}
+.welcome-rules h2{font-size:24px;letter-spacing:.08em;color:#ffd28d;margin:0 0 16px}
+.welcome-rules>p{margin:0 0 14px;color:#ddccb2}
+.welcome-rules ol{padding-left:25px;margin:0;display:grid;grid-template-columns:1fr 1fr;column-gap:42px;row-gap:12px}
+.welcome-rules li{padding-left:4px;color:#dfd0b9;font-size:16px;line-height:1.9}
+.welcome-rules strong{color:#ffe0a5}
+.welcome-rules .help-footnote{font-size:13px;margin-top:22px!important;padding-top:16px}
+@media(max-width:1050px){.welcome-rules ol{grid-template-columns:1fr}.welcome-rules{padding:24px}.welcome-copy,.setup{padding:28px}}

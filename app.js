@@ -1,10 +1,14 @@
-/* Alchemy 2D v6.5: one-click signed settlement of all three stones. */
+/* Alchemy 2D v6.6: one-click signed settlement of all three stones. */
 (() => {
 'use strict';
 const Core=window.AlchemyCore;
 if(!Core) throw Error('alchemy_core.js 未正确载入');
-const VERSION='6.5.0-signed-batch';
-const STORAGE_KEY='alchemy_human_experiment_v6_5_signed_batch_session';
+const Protocol=window.AlchemyFixedProtocol;
+if(!Protocol)throw Error('固定验证场景未正确载入');
+const VERSION='6.6.0-fixed-eval20';
+const LEGACY_STORAGE_KEY='alchemy_human_experiment_v6_6_fixed_eval20_session';
+const SessionStore=window.AlchemySessionStore;
+if(!SessionStore)throw Error('实验数据备份模块未正确载入');
 const POTIONS={
  red:['红色','potion_red.png'], green:['绿色','potion_green.png'],
  yellow:['黄色','potion_yellow.png'], orange:['橙色','potion_orange.png'],
@@ -15,8 +19,8 @@ const COLORS={'-1':['蓝色','blue'],'0':['紫色','purple'],'1':['玫红','rose
 const SIZES={'-1':['小型','small'],'0':['中型','medium'],'1':['大型','large']};
 const VALUE_NAMES=['最低','次低','次高','最高'];
 const VALUE_CLASSES=['value-low','value-midlow','value-midhigh','value-high'];
-const IDs=['welcome','game','participantId','episodeCount','trialCount','seed',
- 'helpBtn','helpDialog','closeHelpBtn','startBtn','practiceBtn',
+const IDs=['welcome','game','participantId',
+ 'startBtn','practiceBtn',
  'episodeValue','trialValue','totalValue','mode',
  'stonesList','potionsList','applyBtn','depositBtn','cauldronScene','fxLayer',
  'transitionPane','nextBtn','completePane','completeSummary',
@@ -27,11 +31,6 @@ let s=null, rng=null, perfZero=performance.now(), elapsedBase=0, historyRenderTo
 function get(id){return dom[id];}
 function copy(x){return JSON.parse(JSON.stringify(x));}
 function escapeHtml(v){return String(v).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');}
-function numberInput(id,lo,hi){
- const n=Number(get(id).value);
- if(!Number.isInteger(n)||n<lo||n>hi)throw Error(`请输入 ${lo} 至 ${hi} 的整数`);
- return n;
-}
 function localIso(){
  const d=new Date(), offset=-d.getTimezoneOffset();
  const f=n=>String(n).padStart(2,'0');
@@ -45,18 +44,17 @@ function sessionId(){
 }
 function stoneState(st){return {id:st.id,hidden:[...st.latent],visible:Core.visibleAttributes(st.latent,s.chemistry),reward:Core.reward(st.latent),submitted:st.submitted};}
 function notice(text){get('srFeedback').textContent=text;}
+function backupFailure(error){
+ console.warn('Alchemy local backup failed',error);
+ if(s&&!s.storageWarningShown){
+  s.storageWarningShown=true;
+  window.alert('浏览器无法保存自动备份。请保持当前页面打开，完成实验后立即下载数据。');
+ }
+}
 function writeSave(){
  if(!s)return;
- try {
-  const snapshot={...s,elapsedSavedMs:elapsedMs(),savedAtUTC:new Date().toISOString(),rngState:rng.state()};
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(snapshot));
- } catch(error){
-  console.warn('Alchemy local backup failed',error);
-  if(!s.storageWarningShown){
-   s.storageWarningShown=true;
-   window.alert('浏览器无法保存自动备份。请保持当前页面打开，完成实验后立即下载数据。');
-  }
- }
+ const snapshot={...s,elapsedSavedMs:elapsedMs(),savedAtUTC:new Date().toISOString(),rngState:rng.state()};
+ void SessionStore.save(snapshot).catch(backupFailure);
 }
 function record(type,more={}){
  if(!s)return;
@@ -65,29 +63,28 @@ function record(type,more={}){
   utc:new Date().toISOString(),localTime:localIso(),elapsedMs:ms,
   episode:s.episodeIndex+1,trial:s.trialIndex+1,
   trialElapsedMs:s.trialStartedElapsedMs==null?null:Math.round((ms-s.trialStartedElapsedMs)*1000)/1000,
-  actionNumber:s.actionsThisTrial,...copy(more)});
+  actionNumber:s.actionsThisTrial,...(!s.practice&&s.episodeIndex>=0?Protocol.provenance(s.episodeIndex):{}),...copy(more)});
  writeSave();
 }
 function makeSession(practice){
  let config;
- try{config={episodes:practice?1:numberInput('episodeCount',1,24),
-    trialsPerEpisode:practice?2:numberInput('trialCount',1,20),
+ try{config={episodes:practice?1:20,
+    trialsPerEpisode:practice?2:10,
     stonesPerTrial:3,potionsPerTrial:12,potionsPerColor:2,
     potionAllocation:'six_adjacent_same_color_pairs_randomized_once_per_session',actionLimit:null,
     allowEndTrial:false,settlementPolicy:'all_stones_signed_sum',autoSettleWhenPotionsExhausted:true,
     perceptualRotation:false,perceptualReflection:true,
     historyScope:'current_trial',historyPanelPolicy:'collapsed_initially_and_after_each_potion',historyDecisionTracking:'since_previous_manual_decision_in_current_trial',feedbackAfterPotion:true,
-    episodeChemistryPolicy:'unique_full_session_and_all_three_components_change_between_adjacent_episodes',
+    episodeChemistryPolicy:practice?'independent_practice':'fixed_validation_20_unique_adjacent_axis_map_potion_reflections_stone_reflections_differ',
+    selectionSeed:0,scheduleId:practice?null:Protocol.schedule.scheduleId,
+    sourceDatasetSha256:practice?null:Protocol.schedule.sourceDatasetSha256,
     effectAnimation:true,depositScorePopup:true};
  }catch(error){window.alert(error.message);return;}
- const typed=get('seed').value.trim();
- if(typed&&(!/^\d+$/.test(typed)||Number(typed)>4294967295)){
-  window.alert('随机种子只能是 0 至 4294967295 的整数，或留空。');return;
- }
- const seed=typed?Number(typed)>>>0:Core.normalizeSeed('');
+ const seed=0;
+ Protocol.validate();
  const participantId=get('participantId').value.trim();
  if(!participantId){window.alert('请填写被试编号。');return;}
- if(s && s.phase!=='completed'&&!window.confirm('开始新实验将覆盖当前 v6.5 会话的自动备份。确定继续吗？'))return;
+ if(s && s.phase!=='completed'&&!window.confirm('开始新实验将覆盖当前 v6.6 会话的自动备份。确定继续吗？'))return;
  rng=Core.makeRng(seed);
  s={version:VERSION,sessionId:sessionId(),participantId,practice,config,seed,
   potionLayout:Core.makePotionLayout(rng),
@@ -108,12 +105,13 @@ function beginEpisode(){
  // Snapshot the previous Episode before constructing the next one. A session
  // always uses one fixed Chemistry throughout all Trials in that Episode.
  const previousChemistry=s.chemistry;
- const next=Core.sampleUniqueEpisodeChemistry(rng,previousChemistry,s.chemistryKeys);
+ const next=s.practice?Core.sampleUniqueEpisodeChemistry(rng,previousChemistry,s.chemistryKeys):
+  copy(Protocol.episode(s.episodeIndex+1).chemistry);
  if(next.rotation!==0)throw Error('The human adaptation must not sample a rotation');
  const signature=Core.chemistryFingerprint(next);
  const flags=Core.chemistryChangeFlags(next,previousChemistry);
  if(s.chemistryKeys.includes(signature) ||
-    (previousChemistry&&Object.values(flags).some(changed=>!changed))) {
+    (previousChemistry&&(!flags.potionMappingChanged||!flags.reflectionChanged))) {
   throw Error('Experiment integrity violation: repeating Episode rules');
  }
  // Only after successful validation can the session state advance.
@@ -129,7 +127,8 @@ function beginTrial(){
  s.trialIndex++;
  s.trialHistory=[];historyRenderToken='';
  s.historyExpanded=false;s.historyDecisionState={clickCount:0,openCount:0};
- const items=Core.sampleTrialItems(rng,3,12,s.potionLayout);
+ const items=s.practice?Core.sampleTrialItems(rng,3,12,s.potionLayout):
+  Protocol.trialItems(s.episodeIndex,s.trialIndex,s.potionLayout);
  s.stones=items.stones;s.potions=items.potions;
  s.selectedStone=null;s.selectedPotion=null;s.actionsThisTrial=0;s.trialScore=0;
  s.pendingFeedback=null;s.pendingSettlementReveal=null;
@@ -311,7 +310,7 @@ function finishTrial(reason){
   potionsUsed:s.potions.filter(x=>x.used).length,
   rawValueDelta:s.trialScore-s.currentTrialInitial.stones.reduce((sum,x)=>sum+x.reward,0),
   initial:copy(s.currentTrialInitial),final:{stones:s.stones.map(stoneState),potions:copy(s.potions)},
-  chemistry:copy(s.chemistry)};
+  chemistry:copy(s.chemistry),...(!s.practice?Protocol.provenance(s.episodeIndex):{})};
  s.trials.push(summary);s.phase='between';
  record('trial_end',{endReason:reason,trialScore:s.trialScore});
 }
@@ -319,7 +318,7 @@ function proceed(){
  if(!s||s.phase!=='between'||s.pendingFeedback||animationBusy||s.pendingSettlementReveal)return;
  if(s.trialIndex+1<s.config.trialsPerEpisode){beginTrial();return;}
  s.episodes.push({participantId:s.participantId,episode:s.episodeIndex+1,
-  episodeScore:s.episodeScore,chemistry:copy(s.chemistry),durationMs:elapsedMs()-s.episodeStartedElapsedMs});
+  episodeScore:s.episodeScore,chemistry:copy(s.chemistry),...(!s.practice?Protocol.provenance(s.episodeIndex):{}),durationMs:elapsedMs()-s.episodeStartedElapsedMs});
  record('episode_end',{episode:s.episodeIndex+1,score:s.episodeScore});
  if(s.episodeIndex+1<s.config.episodes){beginEpisode();return;}
  s.phase='completed';
@@ -498,11 +497,12 @@ function payload(){
  return {metadata:{app:'Alchemy 2D Human Study',version:VERSION,
   reference:'Wang et al. (2021), Alchemy, NeurIPS',
   sourceCodeReference:'https://github.com/google-deepmind/dm_alchemy',
-  note:'Independent human-interface adaptation. v6.5 settles all three stones together, including negative values, and composes their signed total from the Gothic numeral atlas.',
+  note:'Independent human-interface adaptation. v6.6 settles all three stones together, including negative values, and composes their signed total from the Gothic numeral atlas.',
   participantId:s.participantId,sessionId:s.sessionId,practice:s.practice,
   sessionStartUTC:s.startedAtUTC,sessionStartLocal:s.startedAtLocal,
   exportedAtUTC:new Date().toISOString(),phase:s.phase,seed:s.seed,config:s.config,
   cumulativeScore:s.totalScore,
+  backupStorage:'IndexedDB incremental event/Trial/Episode journal; local browser only',
   timeMetric:'performance.now milliseconds (session clock includes wall time after page reload; inspect session_restored events)',
   visibleValue:'Thermometer value colors are explicitly disclosed: blue=-3, light blue=-1, light orange=+1, orange=+15',
   stoneMapping:'perEpisode reflections only: size/colour/shape = reflect * latent; rotation=0',
@@ -513,7 +513,11 @@ function payload(){
   eventLog:'internalReason and latent states appear ONLY in exported researcher data',
   historyDecisionFields:'apply_potion and manual deposit_all_stones are decisions. historyClickedBeforeAction means at least one participant click on the History bar since the previous decision in this Trial; counts reset on each decision and Trial start. Automatic settlement has isDecision=false and null history decision fields. history_toggle logs participant toggles; history_auto_collapse logs programmatic closure. This records clicks, not inferred reading or attention.',
   historyScope:'UI shows all potion applications in the current Trial only, newest first; entering the next Trial clears the view; complete actions remain in exported events',
-  chemistryNonrepeatPolicy:'every full Chemistry unique throughout a session; graph, potion mapping, and reflection all change versus previous Episode',
+  chemistryNonrepeatPolicy:'full Chemistry unique; adjacent potion axis permutation, potion reflections and stone reflections each differ; graph may repeat within a tier',
+  fixedEvaluationSchedule:s.practice?null:{scheduleId:Protocol.schedule.scheduleId,selectionSeed:0,
+   sourceDatasetSha256:Protocol.schedule.sourceDatasetSha256,sourceDatasetCount:6278,
+   trialSeedPolicy:Protocol.schedule.trialSeedPolicy,
+   episodes:Protocol.schedule.episodes.map(e=>({episode:e.episode,source:copy(e.source),initialVisibleStateIds:copy(e.initialVisibleStateIds)}))},
   episodeChemistryFingerprints:copy(s.chemistryKeys)},
   episodes:copy(s.episodes),trials:copy(s.trials),events:copy(s.events),
   currentProgress:{episode:s.episodeIndex+1,trial:s.trialIndex+1,phase:s.phase,
@@ -529,7 +533,7 @@ function downloadFile(name,mime,data){
 }
 function downloadName(ext){
  const participant=s.participantId.replace(/[^A-Za-z0-9_-]/g,'_').slice(0,36)||'participant';
- return `Alchemy_v6_5_signed_${participant}_${s.practice?'practice':'formal'}_${s.sessionId.slice(-10)}.${ext}`;
+ return `Alchemy_v6_6_fixed_eval20_${participant}_${s.practice?'practice':'formal'}_${s.sessionId.slice(-10)}.${ext}`;
 }
 function downloadJSON(){
  if(!s||s.phase!=='completed')return;
@@ -543,6 +547,7 @@ function csvField(v){
 function downloadCSV(){
  if(!s||s.phase!=='completed')return;
  const keys=['seq','type','sessionId','participantId','practice','episode','trial','utc','localTime','elapsedMs','trialElapsedMs',
+  'scheduleId','sourceChemistryId','evaluationEpisodeSeed','numPreconditions','sourceBehaviorSha256',
   'actionNumber','stoneId','potionId','color','changed','internalReason','latentBefore','latentAfter',
   'visibleBefore','visibleAfter','rewardBefore','rewardAfter','reward','feedbackViewingMs',
   'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore','isDecision','historyClickedBeforeAction','historyClickCountBeforeAction','historyOpenCountBeforeAction','historyVisibleBeforeAction','historyEntriesBeforeAction','historyExpanded','historyEntryCount','reason'];
@@ -551,19 +556,25 @@ function downloadCSV(){
  downloadFile(downloadName('csv'),'text/csv;charset=utf-8','\ufeff'+lines.join('\r\n'));
  notice('CSV 数据下载已开始');
 }
-function clearAndSetup(){
- if(s&&!window.confirm('返回设置将清除当前 v6.5 会话的本地恢复备份。请先确认数据已经下载。'))return;
+async function clearAndSetup(){
+ if(s&&!window.confirm('返回设置将清除当前 v6.6 会话的本地恢复备份。请先确认数据已经下载。'))return;
+ try{await SessionStore.clear();localStorage.removeItem(LEGACY_STORAGE_KEY);}catch(error){backupFailure(error);return;}
  s=null;rng=null;historyRenderToken='';animationBusy=false;
- try{localStorage.removeItem(STORAGE_KEY);}catch(error){console.warn(error);}
  get('actionDialog').open&&get('actionDialog').close();
  render();get('welcome').scrollIntoView({behavior:'smooth',block:'start'});
 }
-function restore(){
+async function restore(){
  let saved;
- try{saved=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');}catch(error){return;}
+ try{saved=await SessionStore.load();
+  if(!saved)saved=JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY)||'null');
+ }catch(error){console.warn('Local backup unavailable',error);return;}
  if(!saved||saved.version!==VERSION||!Array.isArray(saved.events))return;
- const message=saved.phase==='completed'?'检测到已完成的 v6.5 实验。是否恢复，以便导出数据？':
-   '检测到 v6.5 实验备份。是否恢复目前的进度和操作记录？';
+ if(!saved.practice&&(saved.seed!==0||saved.config.scheduleId!==Protocol.schedule.scheduleId||
+    saved.config.episodes!==20||saved.config.trialsPerEpisode!==10)){
+  window.alert('备份与当前实验场景清单不匹配。原数据已保留，请联系实验员。');return;
+ }
+ const message=saved.phase==='completed'?'检测到已完成的 v6.6 实验。是否恢复，以便导出数据？':
+   '检测到 v6.6 实验备份。是否恢复目前的进度和操作记录？';
  if(!window.confirm(message))return;
  s=saved;rng=Core.makeRng(s.seed);rng.restore(saved.rngState>>>0);
  s.trialHistory=restoreTrialHistory(saved);
@@ -595,8 +606,6 @@ function bind(){
  get('finishExportBtn').addEventListener('click',downloadJSON);
  get('finishCsvBtn').addEventListener('click',downloadCSV);
  get('newSessionBtn').addEventListener('click',clearAndSetup);
- get('helpBtn').addEventListener('click',()=>get('helpDialog').showModal());
- get('closeHelpBtn').addEventListener('click',()=>get('helpDialog').close());
  document.addEventListener('visibilitychange',()=>{if(s&&s.phase==='playing')record('visibility_change',{hidden:document.hidden});});
  window.addEventListener('beforeunload',event=>{if(s&&s.phase==='playing'){writeSave();event.preventDefault();event.returnValue='';}});
  render();restore();
