@@ -28,7 +28,7 @@ jobs:
       - name: Prepare website files
         run: |
           mkdir -p site
-          cp index.html app.js alchemy_core.js evaluation_schedule.js fixed_protocol.js session_store.js interface_dialog.js cover_ui.css styles.css theme_v6_1.css theme_v6_3.css site/
+          cp index.html app.js alchemy_core.js evaluation_schedule.js fixed_protocol.js session_store.js interface_dialog.js image_ui.js image_ui.css cover_ui.css styles.css theme_v6_1.css theme_v6_3.css site/
           cp -r assets site/assets
           rm -rf site/assets/ui/source_art
           # The signed total display reads this atlas at runtime.

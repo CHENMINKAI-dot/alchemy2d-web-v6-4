@@ -1,0 +1,28 @@
+/* Image-only visible controls; original semantic DOM remains for accessibility/data. */
+.button.image-ui-button{padding:0!important;min-height:0!important;min-width:0!important;width:min(100%,300px);height:auto!important;max-height:none!important;border:0!important;border-radius:0!important;background-color:transparent!important;background-image:var(--image-ui-art)!important;background-position:center!important;background-size:100% 100%!important;background-repeat:no-repeat!important;color:transparent!important;text-shadow:none!important;overflow:hidden!important;transition:transform .14s ease,filter .14s ease!important;filter:none;align-self:center}
+.button.image-ui-button::before,.button.image-ui-button::after{display:none!important;content:none!important}
+.button.image-ui-button:hover:not(:disabled){transform:translateY(-2px)!important;filter:brightness(1.15)}
+.button.image-ui-button:active:not(:disabled){transform:translateY(1px) scale(.99)!important;filter:brightness(.91)}
+.button.image-ui-button:disabled{opacity:1!important;filter:grayscale(.7) brightness(.56)!important}
+.button.image-ui-button:focus-visible{outline:2px solid #f2d49a!important;outline-offset:4px}
+.cover-actions .image-ui-button{width:100%!important;max-width:none;filter:drop-shadow(0 7px 14px #000)}
+.intro-dialog .image-ui-button{margin-left:auto;margin-right:auto;display:block}
+.intro-dialog .dialog-back.image-ui-button{width:160px!important;margin-top:22px}
+#rulesDialog .rules-footer .image-ui-button{width:180px!important;margin:0!important;min-height:0!important}
+.operation-controls .image-ui-button{width:100%!important;max-width:none}
+.session-pane .image-ui-button{width:min(100%,250px)!important;display:block;margin:10px auto}
+.action-dialog .dialog-continue.image-ui-button{width:min(100%,260px)!important;margin:16px auto 0;display:block}
+.resource-retry.image-ui-button{display:block;margin:18px auto 0;width:min(100%,250px)!important}
+.notice-actions .image-ui-button{width:min(48%,220px)!important;margin:0}
+.image-ui-label{border:0!important;border-image:none!important;padding:0!important;min-height:0!important;min-width:0!important;box-shadow:none!important;background-color:transparent!important;background-image:var(--image-ui-art)!important;background-position:center!important;background-size:100% 100%!important;background-repeat:no-repeat!important;color:transparent!important;text-shadow:none!important;overflow:hidden!important;flex-shrink:0}
+.image-ui-snapshot{position:relative!important;color:transparent!important;text-shadow:none!important}
+.image-ui-snapshot>:not(.image-ui-layer){visibility:hidden!important}
+.image-ui-layer{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:fill!important;margin:0!important;padding:0!important;border:0!important;pointer-events:none!important;user-select:none!important;visibility:visible!important;opacity:1!important;z-index:5!important;filter:none!important}
+.image-ui-snapshot:focus-visible{outline:2px solid #f2d49a;outline-offset:3px}
+.history-potion-label.image-ui-label{width:30px!important;height:54px!important;writing-mode:horizontal-tb!important}
+.compare-label.image-ui-label{display:block;align-self:center;width:min(100%,100px)!important;height:27px!important}
+.detail-label.image-ui-label{display:block;width:110px!important;height:30px!important}
+.stone-copy strong.image-ui-label{display:block;width:112px!important;height:30px!important}
+.mode-label.image-ui-label{display:block;width:106px!important;height:29px!important}
+#resourceLoaderTitle.image-ui-label{width:min(100%,330px)!important;height:88px!important;margin-bottom:14px}
+@media(prefers-reduced-motion:reduce){.button.image-ui-button{transition:none!important}.button.image-ui-button:hover:not(:disabled),.button.image-ui-button:active:not(:disabled){transform:none!important}}

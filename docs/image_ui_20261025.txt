@@ -1,0 +1,15 @@
+2026-10-25 图像按钮与铭牌替换
+
+本地与GitHub Pages使用同一套素材和渲染适配器。完整按钮、标题母图与完整生图提示词保存在assets/image_ui/source_*。
+固定操作的21种文案、24种横向铭牌与竖排药水牌由此前审定的GPT Image设计稿确定性切出。文字已包含于PNG。
+image_ui.css将悬停、按下、禁用和键盘焦点作用于整张图，旧背景伪元素不再独立移动。
+image_ui.js仅从可见DOM复制状态，在状态变化时合成2倍分辨率无损PNG。石头、药水、温度计及历史卡片均显示为一个图像层；原刺激PNG未重绘，语义DOM和真实按钮事件保留。
+动态图片有180项缓存上限；无新增模型、网络上传或数据存储字段。被试编号保留真实input，任务说明原文仍在独立滚动区，返回按钮固定。
+新资源和最终动态图像准备完成后，加载进度才达到100%；网络失败保留重试入口。
+
+实验核心app.js、alchemy_core.js、evaluation_schedule.js、fixed_protocol.js、session_store.js、interface_dialog.js未修改。
+固定20个Episode、四类Block顺序、负分计入、历史本Trial范围、一行两列、每次用药自动折叠和决策前历史查看字段沿用。
+本地备份路径见工作区image_ui_replacement_state.json；原文件位于实验程序/_backups/image_ui_20261025_*。
+
+验证：原tests/qa_blocks_guidance.cjs覆盖200个Trial、全部场景与初始条件、刷新恢复、指导语原文、旧数据库保护和JSON/CSV导出。
+新增tests/qa_image_ui.cjs覆盖图像控件、整图动画、键盘、历史图片层与网络失败重试；在Windows Chromium/Edge核验。

@@ -5,11 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>ALCHEMY · 2D 炼金实验 v6.7</title>
-<link rel="preload" href="assets/fonts/alchemy-serif-ui.woff2?v=20261025-blocks-guidance" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261025-blocks-guidance">
-<link rel="stylesheet" href="theme_v6_1.css?v=20261025-blocks-guidance">
-<link rel="stylesheet" href="theme_v6_3.css?v=20261025-blocks-guidance">
-<link rel="stylesheet" href="cover_ui.css?v=20261025-blocks-guidance">
+<link rel="preload" href="assets/fonts/alchemy-serif-ui.woff2?v=20261025-image-ui" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css?v=20261025-image-ui">
+<link rel="stylesheet" href="theme_v6_1.css?v=20261025-image-ui">
+<link rel="stylesheet" href="theme_v6_3.css?v=20261025-image-ui">
+<link rel="stylesheet" href="cover_ui.css?v=20261025-image-ui">
+<link rel="stylesheet" href="image_ui.css?v=20261025-image-ui">
 <link rel="preload" as="image" href="assets/alchemy_cover.png">
 </head>
 <body data-screen="cover">
@@ -154,12 +155,13 @@
 
 
 <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
-<script src="alchemy_core.js?v=20261025-blocks-guidance"></script>
-<script src="evaluation_schedule.js?v=20261025-blocks-guidance"></script>
-<script src="fixed_protocol.js?v=20261025-blocks-guidance"></script>
-<script src="session_store.js?v=20261025-blocks-guidance"></script>
-<script src="interface_dialog.js?v=20261025-blocks-guidance"></script>
-<script src="app.js?v=20261025-blocks-guidance"></script>
+<script src="alchemy_core.js?v=20261025-image-ui"></script>
+<script src="evaluation_schedule.js?v=20261025-image-ui"></script>
+<script src="fixed_protocol.js?v=20261025-image-ui"></script>
+<script src="session_store.js?v=20261025-image-ui"></script>
+<script src="interface_dialog.js?v=20261025-image-ui"></script>
+<script src="image_ui.js?v=20261025-image-ui"></script>
+<script src="app.js?v=20261025-image-ui"></script>
 <script>
 (() => {
   let resourcesResolve;
@@ -180,7 +182,53 @@
     'assets/ui_atlas/button_rect.png', 'assets/ui_atlas/button_rect_alt.png',
     'assets/ui_atlas/frame_large.png', 'assets/ui_atlas/panel_dark_texture.webp',
     'assets/ui_atlas/plaque_dark.png', 'assets/ui_atlas/plaque_parchment.png',
-    'assets/ui_atlas/slot_brown.png', 'assets/ui_atlas/slot_purple.png', 'assets/ui_atlas/tile_landscape.png'
+    'assets/ui_atlas/slot_brown.png', 'assets/ui_atlas/slot_purple.png', 'assets/ui_atlas/tile_landscape.png',
+    'assets/image_ui/button_start.png',
+    'assets/image_ui/button_about.png',
+    'assets/image_ui/button_practice.png',
+    'assets/image_ui/button_formal.png',
+    'assets/image_ui/button_apply.png',
+    'assets/image_ui/button_settle.png',
+    'assets/image_ui/button_next_trial.png',
+    'assets/image_ui/button_next_episode.png',
+    'assets/image_ui/button_complete.png',
+    'assets/image_ui/button_export_json.png',
+    'assets/image_ui/button_export_csv.png',
+    'assets/image_ui/button_back_start.png',
+    'assets/image_ui/button_back.png',
+    'assets/image_ui/button_continue.png',
+    'assets/image_ui/button_retry.png',
+    'assets/image_ui/button_back_cover.png',
+    'assets/image_ui/button_keep_session.png',
+    'assets/image_ui/button_restore_export.png',
+    'assets/image_ui/button_restore.png',
+    'assets/image_ui/button_skip_restore.png',
+    'assets/image_ui/button_history.png',
+    'assets/image_ui/tag_stones.png',
+    'assets/image_ui/tag_workstation.png',
+    'assets/image_ui/tag_potions.png',
+    'assets/image_ui/tag_choose_mode.png',
+    'assets/image_ui/tag_participant.png',
+    'assets/image_ui/tag_instructions.png',
+    'assets/image_ui/tag_feedback.png',
+    'assets/image_ui/tag_notice.png',
+    'assets/image_ui/tag_backup_notice.png',
+    'assets/image_ui/tag_new_session.png',
+    'assets/image_ui/tag_back_cover.png',
+    'assets/image_ui/tag_continue_session.png',
+    'assets/image_ui/tag_before.png',
+    'assets/image_ui/tag_after.png',
+    'assets/image_ui/tag_this_potion.png',
+    'assets/image_ui/tag_formal.png',
+    'assets/image_ui/tag_practice.png',
+    'assets/image_ui/tag_total.png',
+    'assets/image_ui/tag_episode.png',
+    'assets/image_ui/tag_trial.png',
+    'assets/image_ui/tag_loading.png',
+    'assets/image_ui/tag_stone_1.png',
+    'assets/image_ui/tag_stone_2.png',
+    'assets/image_ui/tag_stone_3.png',
+    'assets/image_ui/tag_potion_vertical.png'
   ];
   const loader = document.getElementById('resourceLoader');
   const progress = document.getElementById('resourceProgress');
@@ -190,7 +238,7 @@
   const status = document.getElementById('resourceLoaderStatus');
   const retry = document.getElementById('resourceRetry');
 
-  function updateProgress(loaded, total = assets.length + 1) {
+  function updateProgress(loaded, total = assets.length + 2) {
     const value = total ? Math.floor(loaded / total * 100) : 100;
     fill.style.width = `${value}%`;
     percent.textContent = `${value}%`;
@@ -216,14 +264,14 @@
 
     loader.classList.remove('resource-loader-hidden');
     status.textContent = '正在准备本轮画面…';
-    updateProgress(0, images.length);
+    updateProgress(0, images.length + 1);
     let loaded = 0;
     const failed = [];
     await Promise.all(images.map(async image => {
       try {
         await waitForImageDecode(image);
         loaded += 1;
-        updateProgress(loaded, images.length);
+        updateProgress(loaded, images.length + 1);
       } catch {
         failed.push(image.alt || '实验图片');
       }
@@ -236,6 +284,8 @@
       return;
     }
 
+    if(window.AlchemyImageUI)await window.AlchemyImageUI.flush();
+    updateProgress(++loaded, images.length + 1);
     status.textContent = '本轮画面已准备完成。';
     window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 350);
   }
@@ -283,12 +333,14 @@
       return;
     }
 
+    try { if(window.AlchemyImageUI)await window.AlchemyImageUI.flush(); } catch { status.textContent='图片界面未能准备完成，请重试加载。'; retry.classList.remove('hidden'); return; }
+    updateProgress(++loaded);
     status.textContent = '资源已全部加载，正在进入实验…';
     resourcesResolve();
     window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 450);
   }
 
-  retry.addEventListener('click', () => retryLoad());
+  retry.addEventListener('click', async () => { if(window.AlchemyImageUI?.status().error){try{await window.AlchemyImageUI.retry();}catch{}} retryLoad(); });
   loadResources();
 })();
 </script>

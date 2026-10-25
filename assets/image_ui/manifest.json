@@ -1,0 +1,238 @@
+{
+  "buttons": {
+    "开始实验": {
+      "file": "assets/image_ui/button_start.png",
+      "width": 378,
+      "height": 123
+    },
+    "关于实验": {
+      "file": "assets/image_ui/button_about.png",
+      "width": 376,
+      "height": 123
+    },
+    "练习模式": {
+      "file": "assets/image_ui/button_practice.png",
+      "width": 379,
+      "height": 123
+    },
+    "实验模式": {
+      "file": "assets/image_ui/button_formal.png",
+      "width": 378,
+      "height": 121
+    },
+    "使用药水": {
+      "file": "assets/image_ui/button_apply.png",
+      "width": 376,
+      "height": 121
+    },
+    "全部投入并结算": {
+      "file": "assets/image_ui/button_settle.png",
+      "width": 379,
+      "height": 121
+    },
+    "进入下一 Trial": {
+      "file": "assets/image_ui/button_next_trial.png",
+      "width": 378,
+      "height": 122
+    },
+    "进入下一 Episode": {
+      "file": "assets/image_ui/button_next_episode.png",
+      "width": 376,
+      "height": 122
+    },
+    "完成实验": {
+      "file": "assets/image_ui/button_complete.png",
+      "width": 379,
+      "height": 122
+    },
+    "导出 JSON 数据": {
+      "file": "assets/image_ui/button_export_json.png",
+      "width": 378,
+      "height": 123
+    },
+    "导出 CSV 数据": {
+      "file": "assets/image_ui/button_export_csv.png",
+      "width": 376,
+      "height": 123
+    },
+    "返回开始界面": {
+      "file": "assets/image_ui/button_back_start.png",
+      "width": 379,
+      "height": 123
+    },
+    "返回": {
+      "file": "assets/image_ui/button_back.png",
+      "width": 378,
+      "height": 122
+    },
+    "继续": {
+      "file": "assets/image_ui/button_continue.png",
+      "width": 376,
+      "height": 122
+    },
+    "重试加载": {
+      "file": "assets/image_ui/button_retry.png",
+      "width": 379,
+      "height": 122
+    },
+    "返回封面": {
+      "file": "assets/image_ui/button_back_cover.png",
+      "width": 378,
+      "height": 123
+    },
+    "保留当前实验": {
+      "file": "assets/image_ui/button_keep_session.png",
+      "width": 376,
+      "height": 123
+    },
+    "恢复并导出": {
+      "file": "assets/image_ui/button_restore_export.png",
+      "width": 379,
+      "height": 123
+    },
+    "恢复进度": {
+      "file": "assets/image_ui/button_restore.png",
+      "width": 378,
+      "height": 123
+    },
+    "暂不恢复": {
+      "file": "assets/image_ui/button_skip_restore.png",
+      "width": 376,
+      "height": 123
+    },
+    "历史记录": {
+      "file": "assets/image_ui/button_history.png",
+      "width": 379,
+      "height": 123
+    }
+  },
+  "tags": {
+    "石头": {
+      "file": "assets/image_ui/tag_stones.png",
+      "width": 379,
+      "height": 104
+    },
+    "操作台": {
+      "file": "assets/image_ui/tag_workstation.png",
+      "width": 378,
+      "height": 104
+    },
+    "药水": {
+      "file": "assets/image_ui/tag_potions.png",
+      "width": 377,
+      "height": 104
+    },
+    "选择模式": {
+      "file": "assets/image_ui/tag_choose_mode.png",
+      "width": 379,
+      "height": 103
+    },
+    "被试编号": {
+      "file": "assets/image_ui/tag_participant.png",
+      "width": 378,
+      "height": 103
+    },
+    "实验任务说明": {
+      "file": "assets/image_ui/tag_instructions.png",
+      "width": 377,
+      "height": 103
+    },
+    "用药结果": {
+      "file": "assets/image_ui/tag_feedback.png",
+      "width": 379,
+      "height": 105
+    },
+    "实验提示": {
+      "file": "assets/image_ui/tag_notice.png",
+      "width": 378,
+      "height": 105
+    },
+    "数据备份提示": {
+      "file": "assets/image_ui/tag_backup_notice.png",
+      "width": 377,
+      "height": 105
+    },
+    "开始新实验": {
+      "file": "assets/image_ui/tag_new_session.png",
+      "width": 379,
+      "height": 107
+    },
+    "返回封面": {
+      "file": "assets/image_ui/tag_back_cover.png",
+      "width": 378,
+      "height": 107
+    },
+    "继续实验": {
+      "file": "assets/image_ui/tag_continue_session.png",
+      "width": 377,
+      "height": 107
+    },
+    "用药前": {
+      "file": "assets/image_ui/tag_before.png",
+      "width": 379,
+      "height": 106
+    },
+    "用药后": {
+      "file": "assets/image_ui/tag_after.png",
+      "width": 378,
+      "height": 106
+    },
+    "本次药水": {
+      "file": "assets/image_ui/tag_this_potion.png",
+      "width": 377,
+      "height": 106
+    },
+    "正式实验": {
+      "file": "assets/image_ui/tag_formal.png",
+      "width": 379,
+      "height": 105
+    },
+    "练习": {
+      "file": "assets/image_ui/tag_practice.png",
+      "width": 378,
+      "height": 105
+    },
+    "累计积分": {
+      "file": "assets/image_ui/tag_total.png",
+      "width": 377,
+      "height": 105
+    },
+    "EPISODE": {
+      "file": "assets/image_ui/tag_episode.png",
+      "width": 379,
+      "height": 105
+    },
+    "TRIAL": {
+      "file": "assets/image_ui/tag_trial.png",
+      "width": 378,
+      "height": 105
+    },
+    "正在准备炼金实验": {
+      "file": "assets/image_ui/tag_loading.png",
+      "width": 377,
+      "height": 105
+    },
+    "原石 1": {
+      "file": "assets/image_ui/tag_stone_1.png",
+      "width": 379,
+      "height": 102
+    },
+    "原石 2": {
+      "file": "assets/image_ui/tag_stone_2.png",
+      "width": 378,
+      "height": 102
+    },
+    "原石 3": {
+      "file": "assets/image_ui/tag_stone_3.png",
+      "width": 377,
+      "height": 102
+    }
+  },
+  "colors": {},
+  "source": "Approved GPT Image button and plaque sheets, 2026-10-25",
+  "verticalPotion": {
+    "file": "assets/image_ui/tag_potion_vertical.png",
+    "width": 100,
+    "height": 180
+  }
+}
