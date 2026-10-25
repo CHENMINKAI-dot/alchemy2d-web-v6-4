@@ -228,6 +228,7 @@ function setActionButtonsDisabled(){
  get('historyToggle').disabled=true;
  get('applyBtn').disabled=true;
  get('depositBtn').disabled=true;
+ for(const button of document.querySelectorAll('#stonesList button,#potionsList button'))button.disabled=true;
 }
 function centerOf(element){
  if(!element||typeof element.getBoundingClientRect!=='function')return null;
@@ -359,26 +360,33 @@ function potionArt(color,className='potion-image'){
 }
 function renderStone(stone){
  const a=Core.visibleAttributes(stone.latent,s.chemistry);
- const btn=document.createElement('button');btn.type='button';
- btn.className='stone-tile'+(s.selectedStone===stone.id?' selected':'')+(stone.submitted?' submitted':'');
- btn.disabled=stone.submitted||s.phase!=='playing'||!!s.pendingFeedback;
+ let btn=get('stonesList').querySelector(`[data-stone-id="${stone.id}"]`);
+ const fresh=!btn;if(fresh){btn=document.createElement('button');btn.type='button';btn.className='stone-tile';btn.addEventListener('click',()=>selectStone(stone.id));}
+ btn.classList.toggle('selected',s.selectedStone===stone.id);btn.classList.toggle('submitted',!!stone.submitted);
+ btn.disabled=stone.submitted||s.phase!=='playing'||!!s.pendingFeedback||animationBusy;
  btn.setAttribute('data-stone-id',stone.id);
  btn.setAttribute('aria-pressed',s.selectedStone===stone.id?'true':'false');
  btn.setAttribute('aria-label',`原石${stone.id.slice(1)} ${visibleText(a)}${stone.submitted?' 已投入坩埚':''}`);
- btn.innerHTML=`${stoneArt(a,Core.reward(stone.latent))}<span class="stone-copy"><strong>原石 ${escapeHtml(stone.id.slice(1))}</strong>${stoneDescription(a)}${stone.submitted?'<span class="submitted-label">已投入</span>':''}</span>`;
- btn.addEventListener('click',()=>selectStone(stone.id));
- get('stonesList').appendChild(btn);
+ updateTileContents(btn,`${stoneArt(a,Core.reward(stone.latent))}<span class="stone-copy"><strong>原石 ${escapeHtml(stone.id.slice(1))}</strong>${stoneDescription(a)}${stone.submitted?'<span class="submitted-label">已投入</span>':''}</span>`);
+ if(fresh)get('stonesList').appendChild(btn);
 }
 function renderPotion(p){
- const btn=document.createElement('button');btn.type='button';
- btn.className='potion-tile'+(s.selectedPotion===p.id?' selected':'')+(p.used?' used':'');
- btn.disabled=p.used||s.phase!=='playing'||!!s.pendingFeedback;
+ let btn=get('potionsList').querySelector(`[data-potion-id="${p.id}"]`);
+ const fresh=!btn;if(fresh){btn=document.createElement('button');btn.type='button';btn.className='potion-tile';btn.addEventListener('click',()=>selectPotion(p.id));}
+ btn.classList.toggle('selected',s.selectedPotion===p.id);btn.classList.toggle('used',!!p.used);
+ btn.disabled=p.used||s.phase!=='playing'||!!s.pendingFeedback||animationBusy;
  btn.setAttribute('data-potion-id',p.id);
  btn.setAttribute('aria-pressed',s.selectedPotion===p.id?'true':'false');
  btn.setAttribute('aria-label',`${POTIONS[p.color][0]}药水 ${p.id}${p.used?' 已用':''}`);
- btn.innerHTML=`${potionArt(p.color)}<span>${POTIONS[p.color][0]}</span>`;
- btn.addEventListener('click',()=>selectPotion(p.id));
- get('potionsList').appendChild(btn);
+ updateTileContents(btn,`${potionArt(p.color)}<span>${POTIONS[p.color][0]}</span>`);
+ if(fresh)get('potionsList').appendChild(btn);
+}
+const tileMarkup=new WeakMap();
+function updateTileContents(button,markup){
+ if(tileMarkup.get(button)===markup)return;
+ // Keep the last decoded composite visible while changed stone artwork is prepared.
+ const layer=button.querySelector(':scope>.image-ui-layer'),template=document.createElement('template');template.innerHTML=markup;
+ button.replaceChildren(template.content,...(layer?[layer]:[]));tileMarkup.set(button,markup);
 }
 function stateComparisonCard(title,snapshot){
  return `<div class="comparison-state"><span class="compare-label">${title}</span>
@@ -478,7 +486,9 @@ function render(){
  get('trialValue').textContent=`${s.trialIndex+1} / ${s.config.trialsPerEpisode}`;
  get('totalValue').textContent=s.totalScore;
  get('mode').textContent=s.practice?'练习':'正式实验';
- get('stonesList').replaceChildren();get('potionsList').replaceChildren();
+ // Stable slots preserve decoded pictures, selection focus and animation targets.
+ for(const node of [...get('stonesList').children])if(!s.stones.some(x=>x.id===node.dataset.stoneId))node.remove();
+ for(const node of [...get('potionsList').children])if(!s.potions.some(x=>x.id===node.dataset.potionId))node.remove();
  for(const stone of s.stones)renderStone(stone);
  for(const p of s.potions)renderPotion(p);
  const active=s.phase==='playing'&&!s.pendingFeedback&&!animationBusy;

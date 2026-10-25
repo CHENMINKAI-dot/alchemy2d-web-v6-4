@@ -1,7 +1,7 @@
 /* Approved artwork + lossless visible-state snapshots. No experiment state access. */
 (()=>{
  'use strict';
- const VERSION='20261025-status-potions-v2',BASE=new URL('.',document.baseURI),url=p=>new URL(p,BASE).href;
+ const VERSION='20261025-interaction-stable',BASE=new URL('.',document.baseURI),url=p=>new URL(p,BASE).href;
  const blobCache=new Map(),images=new Map(),renderCache=new Map(),lastKey=new WeakMap();
  let manifest,fontData,queued=false,running=false,again=false,lastError=null;
  const cacheLimit=180;
@@ -64,16 +64,23 @@
  }
  function contentKey(el){
   const r=el.getBoundingClientRect(),body=[...el.childNodes].filter(n=>!(n.nodeType===1&&n.classList.contains('image-ui-layer'))).map(n=>n.outerHTML||n.textContent).join('');
-  return [el.tagName,el.className.replace(/image-ui-snapshot/g,''),el.getAttribute('disabled'),Math.round(r.width*10),Math.round(r.height*10),body].join('|');
+  const classes=[...el.classList].filter(n=>n!=='image-ui-snapshot'&&!n.startsWith('fx-')).sort().join(' ');
+  return [el.tagName,classes,el.getAttribute('disabled'),el.getAttribute('aria-expanded'),Math.round(r.width*10),Math.round(r.height*10),body].join('|');
  }
  async function raster(el){
   const r=el.getBoundingClientRect();if(r.width<1||r.height<1)return;
   const key=contentKey(el);if(lastKey.get(el)===key&&el.querySelector(':scope>.image-ui-layer'))return;
   if(!renderCache.has(key)){renderCache.set(key,paint(el,key).catch(error=>{renderCache.delete(key);throw error;}));if(renderCache.size>cacheLimit)renderCache.delete(renderCache.keys().next().value);}
   const result=await renderCache.get(key);if(!result||!el.isConnected||contentKey(el)!==key){again=true;return;}
-  const layer=el.querySelector(':scope>.image-ui-layer')||Object.assign(new Image(),{className:'image-ui-layer',alt:'',draggable:false});
-  layer.setAttribute('aria-hidden','true');layer.src=result;await layer.decode();if(!el.isConnected)return;
-  if(!layer.parentElement)el.append(layer);el.classList.add('image-ui-snapshot');lastKey.set(el,contentKey(el));
+  // Decode off-DOM. Never clear a visible image's src while preparing its replacement.
+  const previous=el.querySelector(':scope>.image-ui-layer');
+  if(!previous||previous.src!==result){
+   const layer=Object.assign(new Image(),{className:'image-ui-layer',alt:'',draggable:false});
+   layer.setAttribute('aria-hidden','true');layer.src=result;await layer.decode();
+   if(!el.isConnected||contentKey(el)!==key){again=true;return;}
+   if(previous)previous.replaceWith(layer);else el.append(layer);
+  }
+  el.classList.add('image-ui-snapshot');lastKey.set(el,contentKey(el));
   if(el.tagName!=='BUTTON'||el.id==='historyToggle'||!el.hasAttribute('aria-label')){
    const text=el.textContent.trim().replace(/\s+/g,' '),values=[...el.querySelectorAll('.thermometer[aria-label]')].map(n=>n.getAttribute('aria-label'));
    el.setAttribute('aria-label',[text,...values].filter(Boolean).join('；'));
@@ -81,7 +88,7 @@
   }
  }
  function artwork(el,entry,type,label){
-  if(!entry)return;el.classList.add(type);el.style.setProperty('--image-ui-art',`url("${url(entry.file)}")`);
+  if(!entry||el.dataset.imageUiLabel===label&&el.classList.contains(type))return;el.classList.add(type);el.style.setProperty('--image-ui-art',`url("${url(entry.file)}")`);
   if(type==='image-ui-label'){
    for(const [name,value] of Object.entries({'background':`transparent url("${url(entry.file)}") center / 100% 100% no-repeat`,'border-image':'none','border':'0','padding':'0','min-height':'0','min-width':'0','color':'transparent','text-shadow':'none'}))el.style.setProperty(name,value,'important');
   }
@@ -116,9 +123,13 @@
  }
  let ready=initialize();
  const observer=new MutationObserver(records=>{
-  if(records.some(r=>r.type==='characterData'||[...r.addedNodes,...r.removedNodes].some(n=>n.nodeType!==1||!n.classList.contains('image-ui-layer'))))schedule();
+  const visualClasses=value=>(value||'').split(/\s+/).filter(n=>n&&!n.startsWith('image-ui-')&&!n.startsWith('fx-')).sort().join(' ');
+  if(records.some(r=>{
+   if(r.type==='attributes')return r.attributeName==='class'?visualClasses(r.oldValue)!==visualClasses(r.target.getAttribute('class')):r.oldValue!==r.target.getAttribute(r.attributeName);
+   return r.type==='characterData'||[...r.addedNodes,...r.removedNodes].some(n=>n.nodeType!==1||!n.classList.contains('image-ui-layer'));
+  }))schedule();
  });
- observer.observe(document.body,{childList:true,subtree:true,characterData:true});
+ observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true,attributeFilter:['class','disabled','aria-expanded']});
  document.addEventListener('click',schedule,true);document.addEventListener('focusin',schedule,true);window.addEventListener('resize',schedule);
  window.AlchemyImageUI=Object.freeze({get ready(){return ready;},refresh,retry:()=>{blobCache.clear();renderCache.clear();ready=initialize();ready.then(()=>{lastError=null;schedule();}).catch(error=>{lastError=String(error);});return ready;},flush:async()=>{await ready;while(running)await new Promise(r=>setTimeout(r,5));await refresh();},status:()=>({version:VERSION,cache:renderCache.size,error:lastError,running,queued})});
  ready.then(schedule).catch(error=>{lastError=String(error);console.error(error);});

@@ -33,4 +33,4 @@
 .stone-copy strong.image-ui-label{display:block;width:112px!important;height:30px!important}
 .mode-label.image-ui-label{display:block;width:106px!important;height:29px!important}
 #resourceLoaderTitle.image-ui-label{width:min(100%,330px)!important;height:88px!important;margin-bottom:14px}
-@media(prefers-reduced-motion:reduce){.button.image-ui-button{transition:none!important}.button.image-ui-button:hover:not(:disabled),.button.image-ui-button:active:not(:disabled){transform:none!important}}
+@media(prefers-reduced-motion:reduce){.button.image-ui-button,.potions-panel .potion-tile{transition:none!important}.button.image-ui-button:hover:not(:disabled),.button.image-ui-button:active:not(:disabled),.potions-panel .potion-tile:hover:not(:disabled),.potions-panel .potion-tile:active:not(:disabled){transform:none!important}}
