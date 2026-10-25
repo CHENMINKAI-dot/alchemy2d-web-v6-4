@@ -5,16 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="dark">
 <title>ALCHEMY · 2D 炼金实验 v6.7</title>
-<link rel="preload" href="assets/fonts/alchemy-serif-ui.woff2?v=20261025-interaction-stable" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=20261025-interaction-stable">
-<link rel="stylesheet" href="theme_v6_1.css?v=20261025-interaction-stable">
-<link rel="stylesheet" href="theme_v6_3.css?v=20261025-interaction-stable">
-<link rel="stylesheet" href="cover_ui.css?v=20261025-interaction-stable">
-<link rel="stylesheet" href="image_ui.css?v=20261025-interaction-stable">
+<link rel="preload" href="assets/fonts/alchemy-serif-ui.woff2?v=20261025-atomic-views" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css?v=20261025-atomic-views">
+<link rel="stylesheet" href="theme_v6_1.css?v=20261025-atomic-views">
+<link rel="stylesheet" href="theme_v6_3.css?v=20261025-atomic-views">
+<link rel="stylesheet" href="cover_ui.css?v=20261025-atomic-views">
+<link rel="stylesheet" href="image_ui.css?v=20261025-atomic-views">
 <link rel="preload" as="image" href="assets/alchemy_cover.png">
+<link rel="preload" as="image" href="assets/image_ui/loader_boot.png">
 </head>
 <body data-screen="cover">
 <section id="resourceLoader" class="resource-loader" aria-labelledby="resourceLoaderTitle">
+  <canvas id="resourceBootArt" class="resource-boot-art" role="progressbar" aria-label="正在准备炼金实验" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">正在准备炼金实验</canvas>
   <div class="resource-loader-card">
     <h1 id="resourceLoaderTitle">正在准备炼金实验</h1>
     <p id="resourceLoaderStatus" role="status" aria-live="polite">正在加载实验资源…</p>
@@ -155,18 +157,19 @@
 
 
 <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
-<script src="alchemy_core.js?v=20261025-interaction-stable"></script>
-<script src="evaluation_schedule.js?v=20261025-interaction-stable"></script>
-<script src="fixed_protocol.js?v=20261025-interaction-stable"></script>
-<script src="session_store.js?v=20261025-interaction-stable"></script>
-<script src="interface_dialog.js?v=20261025-interaction-stable"></script>
-<script src="image_ui.js?v=20261025-interaction-stable"></script>
-<script src="app.js?v=20261025-interaction-stable"></script>
+<script src="alchemy_core.js?v=20261025-atomic-views"></script>
+<script src="evaluation_schedule.js?v=20261025-atomic-views"></script>
+<script src="fixed_protocol.js?v=20261025-atomic-views"></script>
+<script src="session_store.js?v=20261025-atomic-views"></script>
+<script src="interface_dialog.js?v=20261025-atomic-views"></script>
+<script src="image_ui.js?v=20261025-atomic-views"></script>
+<script src="app.js?v=20261025-atomic-views"></script>
 <script>
 (() => {
   let resourcesResolve;
   window.alchemyResourcesReady=new Promise(resolve=>{resourcesResolve=resolve;});
   const assets = [
+    'assets/image_ui/loader_boot.png',
     'assets/alchemy_cover.png',
     'assets/ui/source_art/gothic_numeral_atlas.png',
     'assets/cauldron.png',
@@ -246,6 +249,19 @@
   const count = document.getElementById('resourceProgressCount');
   const status = document.getElementById('resourceLoaderStatus');
   const retry = document.getElementById('resourceRetry');
+  const boot=document.getElementById('resourceBootArt'),bootImage=new Image();
+  let bootProgress=0,bootQueued=false;
+  function drawBoot(){
+    if(!bootImage.complete||!bootImage.naturalWidth||bootQueued)return;bootQueued=true;
+    requestAnimationFrame(()=>{bootQueued=false;
+      if(boot.width!==bootImage.naturalWidth){boot.width=bootImage.naturalWidth;boot.height=bootImage.naturalHeight;}
+      const ctx=boot.getContext('2d'),scale=boot.width/560;ctx.drawImage(bootImage,0,0);
+      const gold=ctx.createLinearGradient(0,194*scale,0,204*scale);gold.addColorStop(0,'#ffebad');gold.addColorStop(.45,'#cba04f');gold.addColorStop(1,'#80531e');ctx.fillStyle=gold;
+      ctx.fillRect(49*scale,193.96875*scale,462*scale*bootProgress/100,10*scale);
+    });
+  }
+  bootImage.onload=async()=>{try{await bootImage.decode();drawBoot();}catch{}};
+  bootImage.src=new URL('assets/image_ui/loader_boot.png',document.baseURI).href;
 
   function updateProgress(loaded, total = assets.length + 2) {
     const value = total ? Math.floor(loaded / total * 100) : 100;
@@ -253,6 +269,7 @@
     percent.textContent = `${value}%`;
     count.textContent = `${loaded} / ${total} 项资源`;
     progress.setAttribute('aria-valuenow', String(value));
+    bootProgress=value;boot.setAttribute('aria-valuenow',String(value));drawBoot();
   }
 
   function waitForImageDecode(image) {
@@ -266,12 +283,21 @@
   }
 
   let retryLoad = loadResources;
+  let gameViewToken = 0;
+  async function prepareLoaderCard(){
+    if(window.AlchemyImageUI)await window.AlchemyImageUI.prepare(document.querySelector('.resource-loader-card'));
+    loader.classList.add('image-ui-loader-ready');
+  }
 
   async function waitForGameImages() {
+    const token = ++gameViewToken;
     const images = Array.from(document.querySelectorAll('#game img'));
     if (!images.length) return;
+    const game=document.getElementById('game');game.inert=true;game.setAttribute('aria-busy','true');
 
     loader.classList.remove('resource-loader-hidden');
+    loader.classList.remove('image-ui-loader-ready');
+    loader.classList.add('image-ui-loader-instant');
     status.textContent = '正在准备本轮画面…';
     updateProgress(0, images.length + 1);
     let loaded = 0;
@@ -286,17 +312,23 @@
       }
     }));
 
+    if(token !== gameViewToken) return;
+
     if (failed.length) {
       status.textContent = `${failed.length} 张图片未能准备完成，请检查网络后重试。`;
       retryLoad = waitForGameImages;
+      loader.classList.add('image-ui-loader-ready');
       retry.classList.remove('hidden');
       return;
     }
 
-    if(window.AlchemyImageUI)await window.AlchemyImageUI.flush();
+    try { if(window.AlchemyImageUI)await window.AlchemyImageUI.prepare(document.getElementById('game')); }
+    catch { status.textContent='本轮画面未能完整准备，请重试加载。'; retryLoad=waitForGameImages; retry.classList.remove('hidden'); return; }
+    if(token !== gameViewToken) return;
     updateProgress(++loaded, images.length + 1);
     status.textContent = '本轮画面已准备完成。';
-    window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 350);
+    await prepareLoaderCard();
+    requestAnimationFrame(() => {if(token === gameViewToken){loader.classList.add('resource-loader-hidden');game.inert=false;game.setAttribute('aria-busy','false');if(!document.querySelector('dialog[open]'))game.querySelector('.stone-tile:not(:disabled)')?.focus({preventScroll:true});document.dispatchEvent(new CustomEvent('alchemy:game-visible'));}});
   }
 
   window.alchemyWaitForGameImages = waitForGameImages;
@@ -304,6 +336,7 @@
   async function loadResources() {
     retry.classList.add('hidden');
     loader.classList.remove('resource-loader-hidden');
+    loader.classList.remove('image-ui-loader-ready');
     status.textContent = '正在加载实验资源…';
     updateProgress(0);
     let loaded = 0;
@@ -339,17 +372,28 @@
     if (failed.length) {
       status.textContent = `${failed.length} 项资源未能加载，请检查网络后重试。`;
       retry.classList.remove('hidden');
+      loader.classList.add('image-ui-loader-ready');
       return;
     }
 
-    try { if(window.AlchemyImageUI)await window.AlchemyImageUI.flush(); } catch { status.textContent='图片界面未能准备完成，请重试加载。'; retry.classList.remove('hidden'); return; }
+    try { if(window.AlchemyImageUI)await window.AlchemyImageUI.flush(); } catch { status.textContent='图片界面未能准备完成，请重试加载。'; retry.classList.remove('hidden');loader.classList.add('image-ui-loader-ready'); return; }
     updateProgress(++loaded);
     status.textContent = '资源已全部加载，正在进入实验…';
+    await prepareLoaderCard();
     resourcesResolve();
-    window.setTimeout(() => loader.classList.add('resource-loader-hidden'), 450);
+    requestAnimationFrame(() => loader.classList.add('resource-loader-hidden'));
   }
 
-  retry.addEventListener('click', async () => { if(window.AlchemyImageUI?.status().error){try{await window.AlchemyImageUI.retry();}catch{}} retryLoad(); });
+  document.addEventListener('alchemy:visual-error',event=>{
+    loader.classList.remove('resource-loader-hidden');
+    loader.classList.add('image-ui-loader-ready');
+    status.textContent='画面未能完整准备，请重试加载。';retry.classList.remove('hidden');
+    retryLoad=async()=>{await event.detail.retry();retry.classList.add('hidden');loader.classList.add('resource-loader-hidden');};
+  });
+  retry.addEventListener('click', async () => {
+    try{if(window.AlchemyImageUI?.status().error)await window.AlchemyImageUI.retry();await retryLoad();}
+    catch{status.textContent='画面仍未准备完成，请检查网络后重试。';retry.classList.remove('hidden');}
+  });
   loadResources();
 })();
 </script>

@@ -1,10 +1,14 @@
 /* Approved artwork + lossless visible-state snapshots. No experiment state access. */
 (()=>{
  'use strict';
- const VERSION='20261025-interaction-stable',BASE=new URL('.',document.baseURI),url=p=>new URL(p,BASE).href;
+ const VERSION='20261025-atomic-views',BASE=new URL('.',document.baseURI),url=p=>new URL(p,BASE).href;
  const blobCache=new Map(),images=new Map(),renderCache=new Map(),lastKey=new WeakMap();
  let manifest,fontData,queued=false,running=false,again=false,lastError=null;
  const cacheLimit=180;
+ const ROOTS='.stone-tile,.potion-tile,.history-card,.stat,#historyToggle,#actionDetails,#actionSub,#completeSummary,.resource-loader-meta,#resourceLoaderStatus,#noticeMessage,#participantError,.history-empty';
+ const presentations=new WeakMap(),decodedBackgrounds=new Map();
+ const frame=()=>new Promise(requestAnimationFrame);
+ const rootsIn=scope=>[...(scope.matches?.(ROOTS)?[scope]:[]),...scope.querySelectorAll(ROOTS)].filter(el=>el.getBoundingClientRect().width>0&&el.getBoundingClientRect().height>0);
  const props=('box-sizing display position z-index top right bottom left width height min-width min-height max-width max-height margin-top margin-right margin-bottom margin-left padding-top padding-right padding-bottom padding-left gap row-gap column-gap grid-template-columns grid-template-rows grid-column-start grid-column-end grid-row-start grid-row-end grid-auto-flow align-items justify-items justify-content align-content align-self justify-self flex-direction flex-wrap flex-grow flex-shrink flex-basis order font-family font-size font-weight font-style letter-spacing line-height text-align text-decoration text-shadow white-space word-break overflow-wrap writing-mode text-orientation color background-color background-image background-size background-position background-repeat border-top-width border-right-width border-bottom-width border-left-width border-top-style border-right-style border-bottom-style border-left-style border-top-color border-right-color border-bottom-color border-left-color border-top-left-radius border-top-right-radius border-bottom-left-radius border-bottom-right-radius border-image-source border-image-slice border-image-width border-image-outset border-image-repeat box-shadow opacity transform transform-origin overflow overflow-x overflow-y object-fit object-position filter vertical-align').split(' ');
  function dataURI(path){
   if(!path||path.startsWith('data:'))return Promise.resolve(path);
@@ -64,7 +68,7 @@
  }
  function contentKey(el){
   const r=el.getBoundingClientRect(),body=[...el.childNodes].filter(n=>!(n.nodeType===1&&n.classList.contains('image-ui-layer'))).map(n=>n.outerHTML||n.textContent).join('');
-  const classes=[...el.classList].filter(n=>n!=='image-ui-snapshot'&&!n.startsWith('fx-')).sort().join(' ');
+  const classes=[...el.classList].filter(n=>!n.startsWith('image-ui-')&&!n.startsWith('fx-')).sort().join(' ');
   return [el.tagName,classes,el.getAttribute('disabled'),el.getAttribute('aria-expanded'),Math.round(r.width*10),Math.round(r.height*10),body].join('|');
  }
  async function raster(el){
@@ -109,12 +113,69 @@
   running=true;
   try{
    await ready;fixed();
-   const roots=[...document.querySelectorAll('.stone-tile,.potion-tile,.history-card,.stat,#historyToggle,#actionDetails,#actionSub,#completeSummary,.resource-loader-meta,#resourceLoaderStatus,#noticeMessage,#participantError,.history-empty')];
+   const roots=[...document.querySelectorAll(ROOTS)];
    await Promise.all(roots.map(raster));lastError=null;
   }catch(error){lastError=String(error);console.error('Image UI rendering failed',error);throw error;}
   finally{running=false;if(again){again=false;schedule();}}
  }
  function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;refresh().catch(()=>{});});}
+ function isCurrent(el){const im=el.querySelector(':scope>.image-ui-layer');return !!im&&im.complete&&im.naturalWidth>0&&lastKey.get(el)===contentKey(el);}
+ async function flush(scope=document){
+  await ready;
+  for(let attempt=0;attempt<40;attempt++){
+   while(running)await new Promise(r=>setTimeout(r,5));
+   await refresh();
+   if(rootsIn(scope).every(isCurrent))return;
+   await frame();
+  }
+  throw Error('Visible image composition did not settle');
+ }
+ async function prepare(scope){
+  await ready;fixed();await document.fonts.ready;
+  await Promise.all([...scope.querySelectorAll('img')].map(im=>im.decode()));
+  const backgrounds=new Set();
+  for(const el of [scope,...scope.querySelectorAll('*')])for(const pseudo of [null,'::before','::after']){
+   const style=getComputedStyle(el,pseudo);
+   for(const property of ['background-image','border-image-source'])for(const match of style.getPropertyValue(property).matchAll(/url\((["']?)(.*?)\1\)/g))backgrounds.add(match[2]);
+  }
+  await Promise.all([...backgrounds].map(src=>{
+   if(!decodedBackgrounds.has(src)){const im=new Image();im.src=url(src);decodedBackgrounds.set(src,im.decode().catch(error=>{decodedBackgrounds.delete(src);throw error;}));}
+   return decodedBackgrounds.get(src);
+  }));
+  await flush(scope);await frame();
+  // Recheck after layout/font changes have reached a rendering opportunity.
+  await flush(scope);
+ }
+ async function recoverPreparation(scope,error){
+  lastError=String(error);
+  await new Promise(resolve=>document.dispatchEvent(new CustomEvent('alchemy:visual-error',{detail:{error:String(error),retry:async()=>{
+   for(const im of scope.querySelectorAll('img'))if(im.complete&&!im.naturalWidth)im.src=im.src;
+   await prepare(scope);resolve();
+  }}})));
+ }
+ async function presentDialog(dialog,show=()=>dialog.showModal()){
+  const token={};presentations.set(dialog,token);dialog.classList.add('image-ui-staging');
+  show();const focus=dialog.contains(document.activeElement)?document.activeElement:null;
+  try{await prepare(dialog);}catch(error){if(presentations.get(dialog)!==token||!dialog.open)return false;await recoverPreparation(dialog,error);}
+  if(presentations.get(dialog)!==token||!dialog.open)return false;
+  dialog.classList.remove('image-ui-staging');presentations.delete(dialog);
+  (focus&&!focus.disabled?focus:dialog.querySelector('input,button:not(:disabled),[tabindex="0"]'))?.focus({preventScroll:true});
+  return true;
+ }
+ async function presentHistory(list,show){
+  const token={};presentations.set(list,token);const panel=list.closest('.history-panel');
+  panel.style.setProperty('--image-ui-collapsed-height',panel.getBoundingClientRect().height+'px');panel.classList.add('image-ui-history-preparing');list.classList.add('image-ui-staging');show();
+  try{await prepare(list);}catch(error){if(presentations.get(list)!==token)return false;await recoverPreparation(list,error);}
+  if(presentations.get(list)!==token)return false;
+  list.classList.remove('image-ui-staging');panel.classList.remove('image-ui-history-preparing');presentations.delete(list);return true;
+ }
+ async function presentSection(scope,show){
+  const token={};presentations.set(scope,token);scope.classList.add('image-ui-staging','image-ui-section-preparing');show();
+  try{await prepare(scope);}catch(error){if(presentations.get(scope)!==token)return false;await recoverPreparation(scope,error);}
+  if(presentations.get(scope)!==token)return false;
+  scope.classList.remove('image-ui-staging','image-ui-section-preparing');presentations.delete(scope);return true;
+ }
+ function cancelPresentation(scope){presentations.delete(scope);scope.classList.remove('image-ui-staging','image-ui-section-preparing');scope.closest('.history-panel')?.classList.remove('image-ui-history-preparing');}
  async function initialize(){
   const response=await fetch(url('assets/image_ui/manifest.json?v='+VERSION));if(!response.ok)throw Error('Image UI manifest unavailable');manifest=await response.json();
   const entries=[...Object.values(manifest.buttons),...Object.values(manifest.tags),manifest.verticalPotion,...Object.values(manifest.status),...Object.values(manifest.potionCards)];
@@ -131,6 +192,6 @@
  });
  observer.observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeOldValue:true,attributeFilter:['class','disabled','aria-expanded']});
  document.addEventListener('click',schedule,true);document.addEventListener('focusin',schedule,true);window.addEventListener('resize',schedule);
- window.AlchemyImageUI=Object.freeze({get ready(){return ready;},refresh,retry:()=>{blobCache.clear();renderCache.clear();ready=initialize();ready.then(()=>{lastError=null;schedule();}).catch(error=>{lastError=String(error);});return ready;},flush:async()=>{await ready;while(running)await new Promise(r=>setTimeout(r,5));await refresh();},status:()=>({version:VERSION,cache:renderCache.size,error:lastError,running,queued})});
+ window.AlchemyImageUI=Object.freeze({get ready(){return ready;},refresh,prepare,presentDialog,presentHistory,presentSection,cancelPresentation,isCurrent,retry:()=>{blobCache.clear();renderCache.clear();decodedBackgrounds.clear();ready=initialize();ready.then(()=>{lastError=null;schedule();}).catch(error=>{lastError=String(error);});return ready;},flush,status:()=>({version:VERSION,cache:renderCache.size,error:lastError,running,queued})});
  ready.then(schedule).catch(error=>{lastError=String(error);console.error(error);});
 })();

@@ -46,6 +46,16 @@ function sessionId(){
 }
 function stoneState(st){return {id:st.id,hidden:[...st.latent],visible:Core.visibleAttributes(st.latent,s.chemistry),reward:Core.reward(st.latent),submitted:st.submitted};}
 function notice(text){get('srFeedback').textContent=text;}
+function showReadyDialog(dialog){
+ return window.AlchemyImageUI?.presentDialog?window.AlchemyImageUI.presentDialog(dialog):Promise.resolve(dialog.showModal()).then(()=>true);
+}
+function toggleReadyPane(pane,visible){
+ if(!visible){window.AlchemyImageUI?.cancelPresentation(pane);pane.classList.add('hidden');}
+ else if(pane.classList.contains('hidden')){
+  if(window.AlchemyImageUI?.presentSection)void window.AlchemyImageUI.presentSection(pane,()=>pane.classList.remove('hidden'));
+  else pane.classList.remove('hidden');
+ }
+}
 function backupFailure(error){
  console.warn('Alchemy local backup failed',error);
  if(s&&!s.storageWarningShown){
@@ -103,7 +113,6 @@ async function makeSession(practice){
  record('session_start',{config:copy(config),seed,potionLayout:copy(s.potionLayout)});
  beginEpisode();
  notice(practice?'练习开始':'正式实验开始');
- if(typeof window.alchemyWaitForGameImages==='function')void window.alchemyWaitForGameImages();
 }
 function beginEpisode(){
  // Snapshot the previous Episode before constructing the next one. A session
@@ -140,6 +149,7 @@ function beginTrial(){
  s.trialStartedElapsedMs=elapsedMs();s.trialStartedUTC=new Date().toISOString();s.phase='playing';
  record('trial_start',{initial:copy(s.currentTrialInitial),rngState:rng.state()});
  render();
+ if(typeof window.alchemyWaitForGameImages==='function')void window.alchemyWaitForGameImages();
 }
 function selectStone(id){
  if(!s||s.phase!=='playing'||s.pendingFeedback||animationBusy)return;
@@ -427,7 +437,12 @@ function renderHistory(){
 function renderHistoryDisclosure(){
  get('historyToggle').setAttribute('aria-expanded',String(!!s.historyExpanded));
  get('historyToggle').disabled=!!s.pendingFeedback||animationBusy;
- get('history').classList.toggle('hidden',!s.historyExpanded);
+ const history=get('history');
+ if(!s.historyExpanded){window.AlchemyImageUI?.cancelPresentation(history);history.classList.add('hidden');}
+ else if(history.classList.contains('hidden')){
+  if(window.AlchemyImageUI?.presentHistory){const episode=s.episodeIndex,trial=s.trialIndex;void window.AlchemyImageUI.presentHistory(history,()=>history.classList.remove('hidden')).then(shown=>{if(shown&&s&&s.historyExpanded&&s.episodeIndex===episode&&s.trialIndex===trial)record('history_visual_ready',{visualReady:true,historyEntryCount:s.trialHistory.length});});}
+  else history.classList.remove('hidden');
+ }
 }
 function toggleHistory(){
  if(!s||s.pendingFeedback||animationBusy)return;
@@ -463,9 +478,11 @@ function showFeedbackIfNeeded(){
  const row=s.pendingFeedback;
  get('actionSub').textContent=`Episode ${row.episode} · Trial ${row.trial} · 第 ${row.actionNumber} 次行动`;
  get('actionDetails').innerHTML=feedbackMarkup(row);
- dlg.showModal();
- s.pendingFeedback.shownAtElapsedMs=elapsedMs();
- record('feedback_modal_open',{stoneId:row.stoneId,potionId:row.potionId,color:row.color});
+ void showReadyDialog(dlg).then(shown=>{
+  if(!shown||!s||s.pendingFeedback!==row)return;
+  s.pendingFeedback.shownAtElapsedMs=elapsedMs();
+  record('feedback_modal_open',{stoneId:row.stoneId,potionId:row.potionId,color:row.color,visualReady:true});
+ });
 }
 function continueAfterFeedback(){
  if(!s||!s.pendingFeedback)return;
@@ -497,20 +514,22 @@ function render(){
  get('applyBtn').disabled=!(active&&stone&&potion);
  get('depositBtn').disabled=!(active&&s.stones.some(x=>!x.submitted));
  get('nextBtn').disabled=animationBusy||!!s.pendingFeedback||!!s.pendingSettlementReveal;
- get('transitionPane').classList.toggle('hidden',s.phase!=='between'||animationBusy||!!s.pendingFeedback);
- get('completePane').classList.toggle('hidden',s.phase!=='completed');
  if(s.phase==='between'){
   get('nextBtn').textContent=s.trialIndex+1<s.config.trialsPerEpisode?'进入下一 Trial':
    (s.episodeIndex+1<s.config.episodes?'进入下一 Episode':'完成实验');
  }else if(s.phase==='completed'){
   get('completeSummary').textContent=`全部完成 · ${s.trials.length} 个 Trial · 累计 ${s.totalScore} 分。请下载实验数据。`;
  }
+ toggleReadyPane(get('transitionPane'),s.phase==='between'&&!animationBusy&&!s.pendingFeedback);
+ toggleReadyPane(get('completePane'),s.phase==='completed');
  renderHistory();
  showFeedbackIfNeeded();
 }
 function payload(){
  return {metadata:{app:'Alchemy 2D Human Study',version:VERSION,
   reference:'Wang et al. (2021), Alchemy, NeurIPS',
+  presentationVersion:'20261025-atomic-views',
+  visualReadinessPolicy:'Dialogs and history reveal only after complete image composition. feedbackViewingMs starts at complete feedback reveal. trial_visual_ready records actual ready time without rewriting legacy trial_start timing; history_visual_ready records complete history reveal.',
   sourceCodeReference:'https://github.com/google-deepmind/dm_alchemy',
   note:'Independent human-interface adaptation. v6.6 settles all three stones together, including negative values, and composes their signed total from the Gothic numeral atlas.',
   participantId:s.participantId,sessionId:s.sessionId,practice:s.practice,
@@ -565,7 +584,7 @@ function downloadCSV(){
   'scheduleId','sourceChemistryId','evaluationEpisodeSeed','numPreconditions','sourceBehaviorSha256','originalEpisode','block','positionInBlock',
   'actionNumber','stoneId','potionId','color','changed','internalReason','latentBefore','latentAfter',
   'visibleBefore','visibleAfter','rewardBefore','rewardAfter','reward','feedbackViewingMs',
-  'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore','isDecision','historyClickedBeforeAction','historyClickCountBeforeAction','historyOpenCountBeforeAction','historyVisibleBeforeAction','historyEntriesBeforeAction','historyExpanded','historyEntryCount','reason'];
+  'trialScore','episodeScore','totalScore','endReason','seed','config','stoneIds','stoneValues','automatic','displayedScore','isDecision','historyClickedBeforeAction','historyClickCountBeforeAction','historyOpenCountBeforeAction','historyVisibleBeforeAction','historyEntriesBeforeAction','historyExpanded','historyEntryCount','reason','visualReady','visualReadyElapsedMs'];
  const lines=[keys.join(',')];
  for(const e of s.events)lines.push(keys.map(k=>csvField(e[k])).join(','));
  downloadFile(downloadName('csv'),'text/csv;charset=utf-8','\ufeff'+lines.join('\r\n'));
@@ -606,16 +625,16 @@ async function restore(){
  record('session_restored',{resumeAfterUTC:saved.savedAtUTC,priorElapsedMs:saved.elapsedSavedMs,
   note:'Page reload: reaction times spanning reload need separate treatment'});
  if(historyWasExpanded)record('history_auto_collapse',{reason:'page_restore',historyExpanded:false,historyEntryCount:s.trialHistory.length});
- render();if(s.pendingSettlementReveal&&!s.pendingFeedback)void revealSettlement();
+ render();if(typeof window.alchemyWaitForGameImages==='function')void window.alchemyWaitForGameImages();if(s.pendingSettlementReveal&&!s.pendingFeedback)void revealSettlement();
  notice('实验已恢复。请注意页面重新加载可能影响反应时连续性。');
 }
 function bind(){
  for(const id of IDs){const e=document.getElementById(id);if(!e)throw Error('Missing UI element #'+id);dom[id]=e;}
- get('launchBtn').addEventListener('click',()=>get('modeDialog').showModal());
- get('aboutBtn').addEventListener('click',()=>{get('rulesDialog').showModal();document.getElementById('rulesContent').scrollTop=0;});
+ get('launchBtn').addEventListener('click',()=>{void showReadyDialog(get('modeDialog'));});
+ get('aboutBtn').addEventListener('click',()=>{void showReadyDialog(get('rulesDialog'));document.getElementById('rulesContent').scrollTop=0;});
  get('modeCloseBtn').addEventListener('click',()=>get('modeDialog').close());
- get('formalModeBtn').addEventListener('click',()=>{get('modeDialog').close();get('participantError').textContent='';get('participantDialog').showModal();get('participantId').focus();});
- get('participantBackBtn').addEventListener('click',()=>{get('participantDialog').close();get('modeDialog').showModal();});
+ get('formalModeBtn').addEventListener('click',()=>{get('modeDialog').close();get('participantError').textContent='';void showReadyDialog(get('participantDialog'));});
+ get('participantBackBtn').addEventListener('click',()=>{get('participantDialog').close();void showReadyDialog(get('modeDialog'));});
  get('rulesCloseBtn').addEventListener('click',()=>get('rulesDialog').close());
  get('participantForm').addEventListener('submit',event=>{event.preventDefault();void makeSession(false);});
  get('practiceBtn').addEventListener('click',()=>makeSession(true));
@@ -630,6 +649,7 @@ function bind(){
  get('newSessionBtn').addEventListener('click',clearAndSetup);
  document.addEventListener('visibilitychange',()=>{if(s&&s.phase==='playing')record('visibility_change',{hidden:document.hidden});});
  window.addEventListener('beforeunload',event=>{if(s&&s.phase==='playing'){writeSave();event.preventDefault();event.returnValue='';}});
+ document.addEventListener('alchemy:game-visible',()=>{if(s&&s.phase==='playing'&&!s.pendingFeedback)record('trial_visual_ready',{visualReady:true,visualReadyElapsedMs:elapsedMs()});});
  render();restore();
 }
 document.addEventListener('DOMContentLoaded',bind);

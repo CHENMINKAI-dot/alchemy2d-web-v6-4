@@ -19,7 +19,8 @@
     };
     const accept=()=>finish(true),decline=()=>finish(false),escape=e=>{e.preventDefault();finish(!cancel);};
     yes.addEventListener('click',accept);no.addEventListener('click',decline);dialog.addEventListener('cancel',escape);
-    dialog.showModal();yes.focus();
+    if(window.AlchemyImageUI?.presentDialog)void window.AlchemyImageUI.presentDialog(dialog).then(shown=>{if(shown)yes.focus();});
+    else{dialog.showModal();yes.focus();}
    });
   });
   queue=task.catch(()=>{});return task;

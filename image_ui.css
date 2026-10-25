@@ -1,4 +1,14 @@
 /* Image-only visible controls; original semantic DOM remains for accessibility/data. */
+.image-ui-staging,.image-ui-staging *,.image-ui-staging::before,.image-ui-staging::after{visibility:hidden!important;pointer-events:none!important}
+.image-ui-staging .image-ui-layer{visibility:hidden!important}
+html{scrollbar-gutter:stable}
+.resource-boot-art{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100% - 48px));height:auto;max-height:calc(100dvh - 48px);object-fit:contain;pointer-events:none}
+.resource-loader:not(.image-ui-loader-ready) .resource-loader-card,.resource-loader:not(.image-ui-loader-ready) .resource-loader-card *{visibility:hidden!important}
+.resource-loader.image-ui-loader-ready .resource-boot-art{display:none}
+.resource-loader.image-ui-loader-instant{transition:none;background:#100d0afc}
+dialog.image-ui-staging::backdrop{background:transparent!important;backdrop-filter:none!important}
+.history-panel.image-ui-history-preparing{box-sizing:border-box;height:var(--image-ui-collapsed-height)!important;min-height:0!important;overflow:hidden!important}
+.image-ui-section-preparing{height:0!important;min-height:0!important;overflow:hidden!important;padding-top:0!important;padding-bottom:0!important;margin-top:0!important;margin-bottom:0!important}
 .button.image-ui-button{padding:0!important;min-height:0!important;min-width:0!important;width:min(100%,300px);height:auto!important;max-height:none!important;border:0!important;border-radius:0!important;background-color:transparent!important;background-image:var(--image-ui-art)!important;background-position:center!important;background-size:100% 100%!important;background-repeat:no-repeat!important;color:transparent!important;text-shadow:none!important;overflow:hidden!important;transition:transform .14s ease,filter .14s ease!important;filter:none;align-self:center}
 .button.image-ui-button::before,.button.image-ui-button::after{display:none!important;content:none!important}
 .button.image-ui-button:hover:not(:disabled){transform:translateY(-2px)!important;filter:brightness(1.15)}
