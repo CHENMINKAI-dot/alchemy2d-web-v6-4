@@ -1,7 +1,7 @@
 /* Approved artwork + lossless visible-state snapshots. No experiment state access. */
 (()=>{
  'use strict';
- const VERSION='20261025-image-ui',BASE=new URL('.',document.baseURI),url=p=>new URL(p,BASE).href;
+ const VERSION='20261025-status-potions-v2',BASE=new URL('.',document.baseURI),url=p=>new URL(p,BASE).href;
  const blobCache=new Map(),images=new Map(),renderCache=new Map(),lastKey=new WeakMap();
  let manifest,fontData,queued=false,running=false,again=false,lastError=null;
  const cacheLimit=180;
@@ -44,6 +44,18 @@
  const escape=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  async function paint(el,key){
   const r=el.getBoundingClientRect(),w=Math.max(1,Math.round(r.width*2)),h=Math.max(1,Math.round(r.height*2));
+  if(el.matches('.stat,.potion-tile')){
+   const label=el.querySelector('span')?.textContent.trim(),entry=el.matches('.stat')?manifest.status[label]:manifest.potionCards[label];
+   if(!entry)throw Error('Missing integrated card: '+label);
+   const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;const ctx=canvas.getContext('2d');ctx.drawImage(images.get(entry.file),0,0,w,h);
+   if(el.matches('.stat')){
+    const value=el.querySelector('strong').textContent.trim();await document.fonts.load('850 32px "Alchemy Serif"');
+    const size=Math.min(h*.34,w*.17);ctx.font=`850 ${size}px "Alchemy Serif"`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.shadowColor='#000';ctx.shadowBlur=2;ctx.shadowOffsetY=2;
+    const gold=ctx.createLinearGradient(0,h*.59,0,h*.90);gold.addColorStop(0,'#fff2cf');gold.addColorStop(.6,'#edcd8e');gold.addColorStop(1,'#c48b3e');ctx.fillStyle=gold;ctx.fillText(value,w*.5,h*.746,w*.76);
+   }
+   if(el.matches('.potion-tile.selected')){ctx.strokeStyle='#ffe4a2';ctx.lineWidth=Math.max(2,w*.018);ctx.shadowColor='#e0b253';ctx.shadowBlur=9;ctx.strokeRect(w*.022,h*.018,w*.956,h*.964);}
+   return canvas.toDataURL('image/png');
+  }
   const clone=await cloneVisible(el,true);if(!el.isConnected)return null;
   const html=new XMLSerializer().serializeToString(clone);
   const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${r.width} ${r.height}"><style>@font-face{font-family:'Alchemy Serif';font-style:normal;font-weight:100 900;src:url('${fontData}') format('woff2');}</style><foreignObject width="100%" height="100%">${html}</foreignObject></svg>`;
@@ -98,7 +110,7 @@
  function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;refresh().catch(()=>{});});}
  async function initialize(){
   const response=await fetch(url('assets/image_ui/manifest.json?v='+VERSION));if(!response.ok)throw Error('Image UI manifest unavailable');manifest=await response.json();
-  const entries=[...Object.values(manifest.buttons),...Object.values(manifest.tags),manifest.verticalPotion];
+  const entries=[...Object.values(manifest.buttons),...Object.values(manifest.tags),manifest.verticalPotion,...Object.values(manifest.status),...Object.values(manifest.potionCards)];
   await Promise.all(entries.map(async e=>{const im=new Image();im.src=url(e.file);await im.decode();images.set(e.file,im);await dataURI(e.file);}));
   fontData=await dataURI('assets/fonts/alchemy-serif-ui.woff2');await document.fonts.ready;
  }

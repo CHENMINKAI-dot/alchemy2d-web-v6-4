@@ -1,0 +1,32 @@
+{
+  "mode": "built-in image_gen",
+  "source": "source_status_potions_v2.png",
+  "design": "Thin silver/gold frames, baked upper titles and blank value area; original potion pixels composed into blank inventory frame with gold serif captions.",
+  "sourceArtUnchanged": true,
+  "boxes": {
+    "episode": [
+      48,
+      228,
+      573,
+      258
+    ],
+    "trial": [
+      671,
+      228,
+      535,
+      258
+    ],
+    "total": [
+      50,
+      670,
+      620,
+      287
+    ],
+    "potion": [
+      767,
+      543,
+      390,
+      507
+    ]
+  }
+}

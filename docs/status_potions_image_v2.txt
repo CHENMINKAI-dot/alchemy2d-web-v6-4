@@ -1,0 +1,9 @@
+状态牌与药水卡片（2026-10-25 v2）
+
+本次改动仅涉及视觉层。EPISODE、TRIAL、累计积分改为新生成的上下分区状态牌；实时数值与标题背景合成为一张PNG。药水卡片使用原始六种药水图片，与新边框及独立颜色铭牌合成完整PNG，保留选中、禁用与用尽状态。颜色只写颜色名。
+
+生成方式：内置 image_gen。源图 assets/image_ui/source_status_potions_v2.png。切图和合成说明见 status_potions_v2_notes.json。未重新生成药水刺激图片，未改变原图文件。
+
+生成提示词：Create a production-ready square game UI asset atlas matching aged silver borders, subtle gold filigree, warm dark brown leather and pale gold embossed serif typography. Two equal columns and two equal rows, ample gutters. Top left horizontal status plaque: exact text EPISODE in upper third and blank lower half for dynamic value. Top right identical plaque: TRIAL. Bottom left identical plaque: 累计积分 in thick Song serif. Bottom right vertical empty potion inventory card, upper72% main compartment, gold divider, lower18% empty caption compartment. Slender carved silver edging, restrained gold corners, no bottles, icons or numeric values. Flat front view, isolated assets on near-black background.
+
+验证：本地/线上检查三档桌面尺寸、单张PNG显示、选中变化、积分图像更新、按钮事件、加载失败重试、历史记录与200Trial完整实验回归。

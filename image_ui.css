@@ -19,6 +19,14 @@
 .image-ui-snapshot>:not(.image-ui-layer){visibility:hidden!important}
 .image-ui-layer{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;object-fit:fill!important;margin:0!important;padding:0!important;border:0!important;pointer-events:none!important;user-select:none!important;visibility:visible!important;opacity:1!important;z-index:5!important;filter:none!important}
 .image-ui-snapshot:focus-visible{outline:2px solid #f2d49a;outline-offset:3px}
+/* Integrated status/potion art has its own safe text zones; discard the old rims. */
+.status-bar .stat{width:160px!important;min-width:0!important;max-width:none!important;height:73px!important;flex:0 0 160px;padding:0!important;margin:0 10px 0 0!important;background:transparent!important;border:0!important;gap:0!important}
+.status-bar .stat::before,.status-bar .stat::after,.potions-panel .potion-tile::before,.potions-panel .potion-tile::after{content:none!important;display:none!important}
+.potions-panel .potion-tile{padding:0!important;border:0!important;background:transparent!important;border-radius:0!important;box-shadow:none!important;aspect-ratio:390/507;height:auto!important;min-height:0!important;display:block!important;margin:0!important;align-self:start;transition:filter .14s ease,transform .14s ease}
+.potions-panel .potion-tile:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-2px)}
+.potions-panel .potion-tile:active:not(:disabled){transform:translateY(1px)}
+.potions-panel .potion-tile.used{opacity:.28}
+@media(max-width:700px){.status-bar .stat{width:120px!important;flex-basis:120px;height:55px!important;margin-right:5px!important}}
 .history-potion-label.image-ui-label{width:30px!important;height:54px!important;writing-mode:horizontal-tb!important}
 .compare-label.image-ui-label{display:block;align-self:center;width:min(100%,100px)!important;height:27px!important}
 .detail-label.image-ui-label{display:block;width:110px!important;height:30px!important}
